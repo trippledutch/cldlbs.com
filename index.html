@@ -7,6 +7,24 @@
 <meta name="theme-color" content="#0a1024">
 <title>CloudLabs · Hyper-V Health Checks &amp; Cluster Remediation</title>
 <meta name="description" content="CloudLabs delivers independent and structured Hyper-V Cluster Health Checks for Windows Server environments. Remote-first, evidence-based, 40+ years of server expertise.">
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  // Consent Mode v2: deny by default until user accepts
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'denied',
+    'functionality_storage': 'granted',
+    'security_storage': 'granted',
+    'wait_for_update': 500
+  });
+  gtag('js', new Date());
+  gtag('config', 'G-BETH09PH6C', { 'anonymize_ip': true });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -20,6 +38,38 @@
     --body:"Inter Tight", system-ui, sans-serif;
     --mono:"JetBrains Mono", ui-monospace, monospace;
   }
+  /* Consent banner */
+  .consent-banner{
+    position:fixed; left:16px; right:16px; bottom:16px; z-index:9999;
+    max-width:720px; margin:0 auto;
+    background:rgba(15,24,50,.96); backdrop-filter:blur(12px);
+    border:1px solid rgba(120,160,255,.28); border-radius:14px;
+    padding:18px 20px; color:#e6ecff;
+    font-family:"Inter Tight", system-ui, sans-serif; font-size:14px; line-height:1.5;
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+    display:none;
+  }
+  .consent-banner.show{ display:block; }
+  .consent-banner p{ margin:0 0 12px; }
+  .consent-banner .consent-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .consent-banner button{
+    font-family:"JetBrains Mono", ui-monospace, monospace; font-size:12px; font-weight:500;
+    letter-spacing:.04em; text-transform:uppercase;
+    padding:9px 16px; border-radius:8px; cursor:pointer; border:1px solid transparent;
+  }
+  .consent-banner .btn-accept{ background:#5fe3ff; color:#0a1024; }
+  .consent-banner .btn-accept:hover{ background:#7eebff; }
+  .consent-banner .btn-decline{ background:transparent; color:#e6ecff; border-color:rgba(120,160,255,.32); }
+  .consent-banner .btn-decline:hover{ border-color:rgba(120,160,255,.6); }
+  .consent-reopen{
+    position:fixed; right:12px; bottom:12px; z-index:9998;
+    background:transparent; color:#6a7494; border:none; cursor:pointer;
+    font-family:"JetBrains Mono", ui-monospace, monospace; font-size:10px;
+    letter-spacing:.06em; text-transform:uppercase;
+    padding:6px 10px; display:none;
+  }
+  .consent-reopen:hover{ color:#9aa6c8; }
+  .consent-reopen.show{ display:block; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   body{
@@ -804,6 +854,70 @@
     });
   })();
 </script>
-<div class="version-tag" aria-hidden="true">v0.1.1</div>
+<div class="version-tag" aria-hidden="true">v0.1.2</div>
+
+<!-- Cookie consent banner -->
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept. You can change your choice at any time.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat. U kunt uw keuze op elk moment wijzigen.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept">
+      <span lang="en">Accept analytics</span>
+      <span lang="nl">Accepteer analytics</span>
+    </button>
+    <button class="btn-decline" id="consentDecline">
+      <span lang="en">Decline</span>
+      <span lang="nl">Weigeren</span>
+    </button>
+  </div>
+</div>
+<button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+  <span lang="en">Cookies</span>
+  <span lang="nl">Cookies</span>
+</button>
+
+<script>
+  (function(){
+    var KEY = 'cl_consent'; // values: 'granted' | 'denied' | absent
+    var banner  = document.getElementById('consentBanner');
+    var reopen  = document.getElementById('consentReopen');
+    var accept  = document.getElementById('consentAccept');
+    var decline = document.getElementById('consentDecline');
+
+    function showBanner(){ banner.classList.add('show'); reopen.classList.remove('show'); }
+    function hideBanner(){ banner.classList.remove('show'); reopen.classList.add('show'); }
+
+    function update(state){
+      // state: 'granted' or 'denied'
+      gtag('consent', 'update', {
+        'analytics_storage': state,
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied'
+      });
+      try { localStorage.setItem(KEY, state); } catch(e){}
+      hideBanner();
+    }
+
+    var saved = null;
+    try { saved = localStorage.getItem(KEY); } catch(e){}
+
+    if(saved === 'granted'){
+      update('granted');
+      hideBanner();
+    } else if(saved === 'denied'){
+      hideBanner();
+    } else {
+      showBanner();
+    }
+
+    accept.addEventListener('click',  function(){ update('granted'); });
+    decline.addEventListener('click', function(){ update('denied');  });
+    reopen.addEventListener('click',  function(){ showBanner(); });
+  })();
+</script>
+
 </body>
 </html>

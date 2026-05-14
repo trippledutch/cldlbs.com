@@ -62,14 +62,14 @@
   .consent-banner .btn-decline{ background:transparent; color:#e6ecff; border-color:rgba(120,160,255,.32); }
   .consent-banner .btn-decline:hover{ border-color:rgba(120,160,255,.6); }
   .consent-reopen{
-    position:fixed; right:12px; bottom:12px; z-index:9998;
-    background:transparent; color:#6a7494; border:none; cursor:pointer;
-    font-family:"JetBrains Mono", ui-monospace, monospace; font-size:10px;
-    letter-spacing:.06em; text-transform:uppercase;
-    padding:6px 10px; display:none;
+    background:transparent; color:var(--ink-faint); border:1px solid var(--line); cursor:pointer;
+    font-family:var(--mono); font-size:10px;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:6px 10px; border-radius:999px; display:none;
+    line-height:1; align-self:center;
   }
-  .consent-reopen:hover{ color:#9aa6c8; }
-  .consent-reopen.show{ display:block; }
+  .consent-reopen:hover{ color:var(--ink-dim); border-color:var(--line-strong); }
+  .consent-reopen.show{ display:inline-flex; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   body{
@@ -322,8 +322,7 @@
   html[data-lang="en"] [lang="nl"]{display:none}
   html[data-lang="nl"] [lang="en"]{display:none}
 
-  .version-tag{position:fixed;bottom:8px;right:10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);opacity:.55;text-transform:uppercase;pointer-events:none;z-index:50}
-  @media (max-width: 740px){.version-tag{font-size:8.5px;bottom:6px;right:8px}}
+  .brand-version{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);opacity:.6;text-transform:uppercase;margin-top:2px}
 </style>
 </head>
 <body>
@@ -334,6 +333,7 @@
       <span class="word">
         <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
         <small>Decades of server expertise</small>
+        <span class="brand-version">v0.1.2</span>
       </span>
     </a>
     <span class="spacer"></span>
@@ -343,6 +343,10 @@
         <button data-set-lang="en" aria-pressed="true">EN</button>
         <button data-set-lang="nl" aria-pressed="false">NL</button>
       </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span>
+        <span lang="nl">Cookies</span>
+      </button>
     </div>
   </header>
 
@@ -371,7 +375,7 @@
           <div class="home-stats">
             <div class="stat"><div class="n">40<span class="accent">y</span></div><div class="l"><span lang="en">In server &amp; cluster technology</span><span lang="nl">In server &amp; cluster technologie</span></div></div>
             <div class="stat"><div class="n">10<span class="accent">y</span></div><div class="l"><span lang="en">MVP recognition</span><span lang="nl">MVP erkenning</span></div></div>
-            <div class="stat"><div class="n">165<span class="accent">€</span></div><div class="l"><span lang="en">Per hour · no VAT</span><span lang="nl">Per uur · geen BTW</span></div></div>
+            <div class="stat"><div class="n">165<span class="accent">€</span></div><div class="l"><span lang="en">Per hour</span><span lang="nl">Per uur</span></div></div>
           </div>
           <div class="cta-row">
             <button class="btn primary" data-go="book"><span lang="en">Book an intake</span><span lang="nl">Plan een intake</span><span class="arr">→</span></button>
@@ -592,9 +596,6 @@
           <div class="price-row">
             <span class="big">€165</span><span class="unit"><span lang="en">/ hour</span><span lang="nl">/ uur</span></span>
           </div>
-          <div>
-            <span class="vat-note"><span lang="en">Invoiced from outside Europe · no VAT</span><span lang="nl">Gefactureerd vanuit buiten Europa · geen BTW</span></span>
-          </div>
           <p style="margin-top:10px;max-width:50ch">
             <span lang="en">Engagements run against a written service contract for an indicative block of hours. Time is billed as worked. Blocks can be topped up at any point.</span>
             <span lang="nl">Opdrachten lopen onder een schriftelijk service-contract op basis van een richtgevend urenblok. Tijd wordt gefactureerd naar werkelijk besteed. Blokken kunnen op elk moment worden bijgevuld.</span>
@@ -764,11 +765,11 @@
 
   <nav class="tabs" role="tablist">
     <button data-tab="home" aria-current="true"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></button>
-    <button data-tab="services"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></button>
-    <button data-tab="method"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></button>
-    <button data-tab="findings"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></button>
-    <button data-tab="engagement"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></button>
-    <button data-tab="about"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></button>
+    <button data-tab="about"><span class="n">02</span><span lang="en">About</span><span lang="nl">Profiel</span></button>
+    <button data-tab="services"><span class="n">03</span><span lang="en">Services</span><span lang="nl">Diensten</span></button>
+    <button data-tab="method"><span class="n">04</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></button>
+    <button data-tab="findings"><span class="n">05</span><span lang="en">Findings</span><span lang="nl">Findings</span></button>
+    <button data-tab="engagement"><span class="n">06</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></button>
     <button data-tab="book"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></button>
   </nav>
 </div>
@@ -854,8 +855,6 @@
     });
   })();
 </script>
-<div class="version-tag" aria-hidden="true">v0.1.2</div>
-
 <!-- Cookie consent banner -->
 <div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
   <p>
@@ -873,10 +872,6 @@
     </button>
   </div>
 </div>
-<button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
-  <span lang="en">Cookies</span>
-  <span lang="nl">Cookies</span>
-</button>
 
 <script>
   (function(){

@@ -5,6 +5,8 @@
     <loc>https://cldlbs.com/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -12,6 +14,8 @@
     <loc>https://cldlbs.com/about.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/about.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/about.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/about.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -19,6 +23,8 @@
     <loc>https://cldlbs.com/services.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/services.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/services.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/services.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -26,6 +32,8 @@
     <loc>https://cldlbs.com/method.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/method.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/method.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/method.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -33,6 +41,8 @@
     <loc>https://cldlbs.com/findings.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/findings.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/findings.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/findings.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -40,6 +50,8 @@
     <loc>https://cldlbs.com/engagement.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/engagement.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/engagement.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/engagement.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -47,6 +59,8 @@
     <loc>https://cldlbs.com/book.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/book.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/book.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/book.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -54,6 +68,8 @@
     <loc>https://cldlbs.com/faq.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/faq.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/faq.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -61,6 +77,8 @@
     <loc>https://cldlbs.com/cases.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/cases.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/cases.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/cases.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -68,6 +86,8 @@
     <loc>https://cldlbs.com/calculator.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/calculator.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/calculator.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/calculator.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -75,6 +95,8 @@
     <loc>https://cldlbs.com/privacy.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/privacy.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/privacy.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -82,6 +104,8 @@
     <loc>https://cldlbs.com/blog.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog.html"/>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -89,6 +113,7 @@
     <loc>https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -97,6 +122,7 @@
     <loc>https://cldlbs.com/blog/azure-local-migration-readiness.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/azure-local-migration-readiness.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/azure-local-migration-readiness.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/azure-local-migration-readiness.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -105,6 +131,7 @@
     <loc>https://cldlbs.com/blog/csv-ownership-imbalance.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/csv-ownership-imbalance.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/csv-ownership-imbalance.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/csv-ownership-imbalance.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -113,6 +140,7 @@
     <loc>https://cldlbs.com/blog/live-migration-wrong-network.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/live-migration-wrong-network.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/live-migration-wrong-network.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/live-migration-wrong-network.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -121,6 +149,7 @@
     <loc>https://cldlbs.com/blog/cluster-witness-comparison.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/cluster-witness-comparison.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/cluster-witness-comparison.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/cluster-witness-comparison.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -129,6 +158,7 @@
     <loc>https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -137,6 +167,7 @@
     <loc>https://cldlbs.com/blog/hyper-v-time-drift-kerberos-csv.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/hyper-v-time-drift-kerberos-csv.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/hyper-v-time-drift-kerberos-csv.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/hyper-v-time-drift-kerberos-csv.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -145,6 +176,7 @@
     <loc>https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -153,6 +185,7 @@
     <loc>https://cldlbs.com/blog/cluster-aware-updating-runbook-audit-trail.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/cluster-aware-updating-runbook-audit-trail.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/cluster-aware-updating-runbook-audit-trail.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/cluster-aware-updating-runbook-audit-trail.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
@@ -161,6 +194,7 @@
     <loc>https://cldlbs.com/blog/san-vs-s2d-vs-azure-local-hyper-v-storage.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/san-vs-s2d-vs-azure-local-hyper-v-storage.html"/>
     <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/san-vs-s2d-vs-azure-local-hyper-v-storage.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/san-vs-s2d-vs-azure-local-hyper-v-storage.html"/>
     <lastmod>2026-05-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>

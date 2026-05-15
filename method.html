@@ -1,0 +1,159 @@
+<!doctype html>
+<!-- CloudLabs · v0.2.0 · Method -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="favicon.png" type="image/png">
+<title>Method · How a Hyper-V Health Check Works · CloudLabs</title>
+<meta name="description" content="CloudLabs health check in five structured steps: intake, scripted inventory, analysis against Microsoft best practice, findings document, and optional action list. No agents installed, no surprises.">
+<link rel="canonical" href="https://cldlbs.com/method.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/method.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/method.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cldlbs.com/method.html">
+<meta property="og:title" content="Method · How a Hyper-V Health Check Works · CloudLabs">
+<meta property="og:description" content="Five structured steps. Intake, scripted inventory, best-practice analysis, findings document, optional action list. No agents installed.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"HowTo",
+  "name":"CloudLabs Hyper-V Health Check Method",
+  "description":"Five structured steps for a Hyper-V Cluster Health Check: intake, scripted inventory, analysis, findings document, action list.",
+  "url":"https://cldlbs.com/method.html",
+  "step":[
+    {"@type":"HowToStep","position":1,"name":"Intake & problem definition","text":"Topology, storage model, management tooling, backup, monitoring, recent incidents. Scope and language set here."},
+    {"@type":"HowToStep","position":2,"name":"Scripted inventory","text":"PowerShell scripts tailored to your configuration. No agents, no installs."},
+    {"@type":"HowToStep","position":3,"name":"Analysis against best practice","text":"Each data point compared to the Microsoft baseline for your topology."},
+    {"@type":"HowToStep","position":4,"name":"Findings document","text":"Structured findings with risk levels: HIGH, MEDIUM, LOW, NONE."},
+    {"@type":"HowToStep","position":5,"name":"Action list (optional)","text":"Follow-up engagement to execute the recommendations."}
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="method.html" aria-current="page"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="cases.html"><span class="n">09</span><span lang="en">Cases</span><span lang="nl">Cases</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <div class="eyebrow">/04 · <span lang="en">Method</span><span lang="nl">Werkwijze</span></div>
+    <h1 style="font-size:clamp(22px,4.2vw,34px);font-weight:600;margin-bottom:10px">
+      <span lang="en">Five steps. No surprises.</span>
+      <span lang="nl">Vijf stappen. Geen verrassingen.</span>
+    </h1>
+    <div class="method anim-stagger">
+      <div class="step">
+        <div class="num">01</div>
+        <div>
+          <h3><span lang="en">Intake &amp; problem definition</span><span lang="nl">Intake &amp; probleemstelling</span></h3>
+          <p><span lang="en">Topology, storage model, management tooling, backup, monitoring, recent incidents. Scope and language are set here. Customer-provided context, diagrams and prior documentation are treated as primary source material.</span><span lang="nl">Topologie, storage, managementtooling, backup, monitoring en recente incidenten. Hier worden scope en taal vastgelegd. Documenten en diagrammen van de klant zijn primaire bron.</span></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <div>
+          <h3><span lang="en">Scripted inventory</span><span lang="nl">Geautomatiseerde inventarisatie</span></h3>
+          <p><span lang="en">PowerShell scripts tailored to your configuration, executed by you or under supervision. Output is reconciled with your written context. No agents, no installs.</span><span lang="nl">PowerShell-scripts toegespitst op uw configuratie, uitgevoerd door uzelf of onder begeleiding. De output wordt vergeleken met de aangeleverde context. Geen agents, geen installaties.</span></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <div>
+          <h3><span lang="en">Analysis against best practice</span><span lang="nl">Analyse tegen best practice</span></h3>
+          <p><span lang="en">Each data point is compared to the Microsoft baseline for your topology. Deviation, risk level and supporting reference are recorded.</span><span lang="nl">Elk datapunt wordt vergeleken met de Microsoft baseline voor uw topologie. Afwijking, risiconiveau en referentie worden vastgelegd.</span></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">04</div>
+        <div>
+          <h3><span lang="en">Findings document</span><span lang="nl">Findings-document</span></h3>
+          <p><span lang="en">Structured findings: Status, Current situation, Best Practice, Deviation, Recommendation, Reference. Colour-coded risk (HIGH, MEDIUM, LOW, NONE). Executive summary, findings table, risk register, prioritised recommendations.</span><span lang="nl">Gestructureerde findings: Status, Huidige situatie, Best Practice, Afwijking, Aanbeveling, Referentie. Kleurgecodeerd risico (HOOG, MIDDEL, LAAG, GEEN). Management samenvatting, findings-tabel, risicoregister en geprioriteerde aanbevelingen.</span></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">05</div>
+        <div>
+          <h3><span lang="en">Action list (optional)</span><span lang="nl">Actielijst (optioneel)</span></h3>
+          <p><span lang="en">A follow-up engagement to execute the recommendations. Each action gets an owner, dependency chain, downtime impact and validation step.</span><span lang="nl">Vervolgopdracht waarin de aanbevelingen worden uitgevoerd. Elke actie krijgt een eigenaar, afhankelijkheden, impact op downtime en validatiestap.</span></p>
+        </div>
+      </div>
+    </div>
+    <div class="cta-row" style="margin-top:24px">
+      <a class="btn primary" href="book.html"><span lang="en">Start with an intake</span><span lang="nl">Begin met een intake</span><span class="arr">→</span></a>
+      <a class="btn" href="findings.html"><span lang="en">See a sample finding</span><span lang="nl">Zie een voorbeeldbevinding</span></a>
+    </div>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="book.html" lang="en">Book</a><a href="book.html" lang="nl">Boek</a>
+    <a href="privacy.html" lang="en">Privacy</a><a href="privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.2.0</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

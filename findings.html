@@ -1,0 +1,190 @@
+<!doctype html>
+<!-- CloudLabs · v0.2.0 · Findings -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="favicon.png" type="image/png">
+<title>Findings Format · Hyper-V Health Check Report Examples · CloudLabs</title>
+<meta name="description" content="Real-world Hyper-V Health Check finding examples: Live Migration over heartbeat network, File Share Witness risk, CSV ownership imbalance. Structured, evidence-based, risk-classified.">
+<link rel="canonical" href="https://cldlbs.com/findings.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/findings.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/findings.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cldlbs.com/findings.html">
+<meta property="og:title" content="Findings Format · Hyper-V Health Check Report Examples · CloudLabs">
+<meta property="og:description" content="See how CloudLabs structures a Hyper-V health check finding: status, current situation, best practice, deviation, recommendation, reference.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="findings.html" aria-current="page"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="cases.html"><span class="n">09</span><span lang="en">Cases</span><span lang="nl">Cases</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <div class="eyebrow">/05 · <span lang="en">Findings format</span><span lang="nl">Findings-format</span></div>
+    <h1 style="font-size:clamp(22px,4.2vw,34px);font-weight:600;margin-bottom:10px">
+      <span lang="en">Every finding follows the same anatomy.</span>
+      <span lang="nl">Elke finding volgt dezelfde anatomie.</span>
+    </h1>
+    <p class="muted" style="margin-top:6px;max-width:62ch">
+      <span lang="en">Customer-facing prose. No bullet noise. Risk visible at a glance. Below: real-world examples.</span>
+      <span lang="nl">Lopende prose, klantgericht. Geen bullet-ruis. Risico in één oogopslag. Hieronder voorbeelden uit de praktijk.</span>
+    </p>
+    <p style="font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-top:8px">
+      <span lang="en">Methodology last updated:</span><span lang="nl">Methodologie bijgewerkt:</span> <span style="color:var(--cyan)">May 2026</span>
+    </p>
+    <div class="risk-legend anim-fade anim-up">
+      <span class="chip hoog">High · Hoog</span>
+      <span class="chip middel">Medium · Middel</span>
+      <span class="chip laag">Low · Laag</span>
+      <span class="chip geen">None · Geen</span>
+    </div>
+
+    <div class="findings-nav anim-fade anim-up" role="tablist" aria-label="Example findings">
+      <div class="pills">
+        <button class="pill-btn" data-finding="f22" aria-current="true" role="tab">F22 · Networking</button>
+        <button class="pill-btn" data-finding="f12" aria-current="false" role="tab">F12 · Quorum</button>
+        <button class="pill-btn" data-finding="f18" aria-current="false" role="tab">F18 · CSV Ownership</button>
+      </div>
+      <div class="arrows">
+        <button class="arrow-btn" id="finding-prev" aria-label="Previous finding">←</button>
+        <button class="arrow-btn" id="finding-next" aria-label="Next finding">→</button>
+      </div>
+    </div>
+
+    <div class="findings-stage">
+
+      <div class="finding-card active" data-finding="f22">
+        <div class="finding-head">
+          <div>
+            <div class="id">F22 · Networking · Live Migration</div>
+            <h3><span lang="en">Live Migration traffic routed over the cluster heartbeat network</span><span lang="nl">Live Migration-verkeer loopt over het cluster-heartbeat netwerk</span></h3>
+          </div>
+          <span class="chip hoog">High · Hoog</span>
+        </div>
+        <div class="finding-body">
+          <p><span class="lbl"><span lang="en">Status</span><span lang="nl">Status</span></span><span lang="en">Open. Confirmed via <span class="pill">Get-ClusterNetwork</span>, per-node binding order, and the Live Migration network selection on each Hyper-V host.</span><span lang="nl">Open. Bevestigd via <span class="pill">Get-ClusterNetwork</span>, de binding order per node, en de Live Migration-netwerkselectie op elke Hyper-V host.</span></p>
+          <p><span class="lbl"><span lang="en">Current situation</span><span lang="nl">Huidige situatie</span></span><span lang="en">The <span class="pill">Cluster Communication</span> network has role 3 (Cluster and Client) and allows both cluster traffic and Live Migration on a single 1 GbE adapter per node. The same adapter carries cluster heartbeats and CSV metadata, and no QoS policy is applied to reserve bandwidth for either workload.</span><span lang="nl">Het <span class="pill">Cluster Communication</span>-netwerk heeft rol 3 (Cluster and Client) en staat open voor zowel cluster-verkeer als Live Migration op één 1 GbE-adapter per node. Dezelfde adapter draagt cluster-heartbeats en CSV-metadata, en er is geen QoS-beleid ingesteld om bandbreedte voor een van beide te reserveren.</span></p>
+          <p><span class="lbl"><span lang="en">Best Practice</span><span lang="nl">Best Practice</span></span><span lang="en">Live Migration must run on a dedicated 10 GbE or faster network, physically separated from heartbeat and CSV metadata where possible. When converged on a SET team, a QoS policy must guarantee minimum bandwidth for cluster traffic, and SMB Direct (RDMA) should be enabled when the NICs support it.</span><span lang="nl">Live Migration hoort op een dedicated 10 GbE-netwerk of sneller, fysiek gescheiden van heartbeat en CSV-metadata waar mogelijk. Bij convergentie op een SET-team moet een QoS-beleid minimum-bandbreedte garanderen voor cluster-verkeer, en SMB Direct (RDMA) ingeschakeld zijn als de NIC's dit ondersteunen.</span></p>
+          <p><span class="lbl"><span lang="en">Deviation</span><span lang="nl">Afwijking</span></span><span lang="en">A single Live Migration of a memory-heavy VM saturates the 1 GbE link within seconds and starves cluster heartbeats. The cluster service treats missed heartbeats as node isolation, producing FailoverClustering Event ID 1135 in the System log, CSV ownership flapping, and in the worst case unplanned VM restarts on surviving nodes. Microsoft Support will require this is corrected before troubleshooting any cluster performance or stability case.</span><span lang="nl">Eén Live Migration van een memory-zware VM verzadigt de 1 GbE-link binnen seconden en verdringt cluster-heartbeats. De cluster-service ziet gemiste heartbeats als node-isolatie, met FailoverClustering Event ID 1135 in het Systeem-log, CSV-eigenaarschap dat heen en weer springt, en in het slechtste geval ongeplande VM-restarts op de overgebleven nodes. Microsoft Support eist correctie hiervan voor enige cluster-performance of stabiliteitscase.</span></p>
+          <p><span class="lbl"><span lang="en">Recommendation</span><span lang="nl">Aanbeveling</span></span><span lang="en">Move Live Migration onto a dedicated 10 GbE network, ideally with SMB Direct (RDMA) where the NICs support it. If physical separation is not feasible, apply <span class="pill">Set-NetQosPolicy</span> on the SET team to reserve minimum bandwidth for cluster and CSV traffic, and cap concurrent migrations via <span class="pill">Set-VMHost -MaximumVirtualMachineMigrations</span>.</span><span lang="nl">Verplaats Live Migration naar een dedicated 10 GbE-netwerk, bij voorkeur met SMB Direct (RDMA) waar de NIC's dit ondersteunen. Is fysieke scheiding niet haalbaar, gebruik dan <span class="pill">Set-NetQosPolicy</span> op het SET-team om minimum-bandbreedte voor cluster- en CSV-verkeer te reserveren, en begrens parallelle migraties via <span class="pill">Set-VMHost -MaximumVirtualMachineMigrations</span>.</span></p>
+          <p><span class="lbl"><span lang="en">Reference</span><span lang="nl">Referentie</span></span><span lang="en">Microsoft Learn: Hyper-V network recommendations for a failover cluster; Configure live migration settings.</span><span lang="nl">Microsoft Learn: Hyper-V network recommendations for a failover cluster; Configure live migration settings.</span></p>
+        </div>
+      </div>
+
+      <div class="finding-card" data-finding="f12">
+        <div class="finding-head">
+          <div>
+            <div class="id">F12 · Cluster Configuration · Quorum</div>
+            <h3><span lang="en">File Share Witness on a single non-redundant file server</span><span lang="nl">File Share Witness op één niet-redundante fileserver</span></h3>
+          </div>
+          <span class="chip hoog">High · Hoog</span>
+        </div>
+        <div class="finding-body">
+          <p><span class="lbl"><span lang="en">Status</span><span lang="nl">Status</span></span><span lang="en">Open. Identified during the most recent cluster validation run and confirmed via <span class="pill">Get-ClusterQuorum</span> and <span class="pill">Get-ClusterResource "File Share Witness"</span>.</span><span lang="nl">Open. Vastgesteld tijdens de meest recente cluster-validatierun en bevestigd met <span class="pill">Get-ClusterQuorum</span> en <span class="pill">Get-ClusterResource "File Share Witness"</span>.</span></p>
+          <p><span class="lbl"><span lang="en">Current situation</span><span lang="nl">Huidige situatie</span></span><span lang="en">The cluster uses a File Share Witness pointed at a UNC path on a single standalone Windows file server in the same site as the cluster, on the same management VLAN. The witness server is not clustered, runs on shared infrastructure with no dedicated maintenance window, and Dynamic Witness is enabled, which masks part of the risk during day-to-day operation.</span><span lang="nl">Het cluster gebruikt een File Share Witness op een UNC-pad van één standalone Windows-fileserver in dezelfde site als het cluster, op hetzelfde management-VLAN. De fileserver is niet geclusterd, draait op gedeelde infrastructuur zonder eigen onderhoudsvenster, en Dynamic Witness staat aan, wat een deel van het risico in de dagelijkse operatie maskeert.</span></p>
+          <p><span class="lbl"><span lang="en">Best Practice</span><span lang="nl">Best Practice</span></span><span lang="en">The witness must reside on infrastructure independent of the cluster's failure domains. For single-site clusters, Cloud Witness on Azure Storage is preferred; for multisite, the witness sits in a third site or on Azure.</span><span lang="nl">De witness moet op infrastructuur staan los van de failure domains van het cluster. Voor single-site clusters heeft Cloud Witness op Azure Storage de voorkeur; voor multisite hoort de witness in een derde site of op Azure.</span></p>
+          <p><span class="lbl"><span lang="en">Deviation</span><span lang="nl">Afwijking</span></span><span lang="en">The witness shares a failure domain with the cluster. Dynamic Witness offers no protection when a node fails simultaneously with the witness server; in that combined-failure case the cluster drops below quorum and all VMs go offline.</span><span lang="nl">De witness deelt een failure domain met het cluster. Dynamic Witness beschermt niet tegen het scenario waarin een node tegelijk uitvalt met de witness-server; in dat combinatie-scenario zakt het cluster onder quorum en gaan alle VM's offline.</span></p>
+          <p><span class="lbl"><span lang="en">Recommendation</span><span lang="nl">Aanbeveling</span></span><span lang="en">Reconfigure to a Cloud Witness via <span class="pill">Set-ClusterQuorum -CloudWitness</span> using a dedicated Azure Storage Account with access keys stored separately from the cluster credentials.</span><span lang="nl">Configureer een Cloud Witness via <span class="pill">Set-ClusterQuorum -CloudWitness</span> met een dedicated Azure Storage Account waarvan de access keys los van de cluster-credentials worden bewaard.</span></p>
+          <p><span class="lbl"><span lang="en">Reference</span><span lang="nl">Referentie</span></span><span lang="en">Microsoft Learn: Configure and manage quorum; Deploy a Cloud Witness for a failover cluster.</span><span lang="nl">Microsoft Learn: Configure and manage quorum; Deploy a Cloud Witness for a failover cluster.</span></p>
+        </div>
+      </div>
+
+      <div class="finding-card" data-finding="f18">
+        <div class="finding-head">
+          <div>
+            <div class="id">F18 · Cluster Configuration · CSV Ownership</div>
+            <h3><span lang="en">CSV ownership unbalanced: 7 of 8 volumes owned by a single node</span><span lang="nl">CSV-eigenaarschap onbalans: 7 van de 8 volumes op één node</span></h3>
+          </div>
+          <span class="chip middel">Medium · Middel</span>
+        </div>
+        <div class="finding-body">
+          <p><span class="lbl"><span lang="en">Status</span><span lang="nl">Status</span></span><span lang="en">Open. Observed across three consecutive inventory runs via <span class="pill">Get-ClusterSharedVolume</span> and confirmed with <span class="pill">Get-ClusterSharedVolumeState</span>.</span><span lang="nl">Open. Geconstateerd in drie opeenvolgende inventarisatie-runs via <span class="pill">Get-ClusterSharedVolume</span> en bevestigd met <span class="pill">Get-ClusterSharedVolumeState</span>.</span></p>
+          <p><span class="lbl"><span lang="en">Current situation</span><span lang="nl">Huidige situatie</span></span><span lang="en">Of the eight CSVs in the cluster, seven are owned by node <span class="pill">HV-01</span>. CsvBalancer is enabled with BalancingPeriod 30 minutes but has not converged, typically because VM placement keeps pulling ownership back to <span class="pill">HV-01</span>.</span><span lang="nl">Van de acht CSV's in het cluster zijn er zeven in eigendom van node <span class="pill">HV-01</span>. CsvBalancer staat aan met BalancingPeriod 30 minuten maar convergeert niet, doorgaans omdat VM-plaatsing het eigenaarschap blijft terugtrekken naar <span class="pill">HV-01</span>.</span></p>
+          <p><span class="lbl"><span lang="en">Best Practice</span><span lang="nl">Best Practice</span></span><span lang="en">CSV ownership should be approximately even across nodes so that metadata coordination, redirected IO during backups, and Live Migration overhead are spread.</span><span lang="nl">CSV-eigenaarschap hoort ongeveer gelijk verdeeld te zijn, zodat metadata-coördinatie, redirected IO tijdens backups en Live Migration overhead worden gespreid.</span></p>
+          <p><span class="lbl"><span lang="en">Deviation</span><span lang="nl">Afwijking</span></span><span lang="en">Concentrated ownership creates a metadata and IO coordination hotspot on <span class="pill">HV-01</span>. Drain operations on <span class="pill">HV-01</span> for patching trigger seven simultaneous ownership changes, elongating maintenance windows and producing brief IO pauses on VMs hosted on those CSVs.</span><span lang="nl">Geconcentreerd eigenaarschap creëert een hotspot voor metadata- en IO-coördinatie op <span class="pill">HV-01</span>. Drain-operaties op <span class="pill">HV-01</span> voor patching geven zeven gelijktijdige eigenaarsovergangen, wat het onderhoudsvenster verlengt en korte IO-pauzes geeft op VM's die op die CSV's draaien.</span></p>
+          <p><span class="lbl"><span lang="en">Recommendation</span><span lang="nl">Aanbeveling</span></span><span lang="en">Redistribute CSV ownership manually with <span class="pill">Move-ClusterSharedVolume</span> so each node holds roughly the same number, then review VM placement and anti-affinity rules on <span class="pill">HV-01</span>.</span><span lang="nl">Verdeel CSV-eigenaarschap handmatig met <span class="pill">Move-ClusterSharedVolume</span> zodat elke node ongeveer evenveel CSV's bezit, en controleer dan de VM-plaatsing en anti-affinity regels op <span class="pill">HV-01</span>.</span></p>
+          <p><span class="lbl"><span lang="en">Reference</span><span lang="nl">Referentie</span></span><span lang="en">Microsoft Learn: Use Cluster Shared Volumes in a failover cluster; CSV cache and balancing behaviour.</span><span lang="nl">Microsoft Learn: Use Cluster Shared Volumes in a failover cluster; CSV cache and balancing behaviour.</span></p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="cta-row" style="margin-top:24px">
+      <a class="btn primary" href="book.html"><span lang="en">Book a health check</span><span lang="nl">Plan een health check</span><span class="arr">→</span></a>
+      <a class="btn" href="method.html"><span lang="en">See the method</span><span lang="nl">Bekijk de werkwijze</span></a>
+    </div>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="book.html" lang="en">Book</a><a href="book.html" lang="nl">Boek</a>
+    <a href="privacy.html" lang="en">Privacy</a><a href="privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.2.0</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

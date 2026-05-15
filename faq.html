@@ -1,0 +1,499 @@
+<!doctype html>
+<!-- CloudLabs · v0.2.0 · FAQ -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="favicon.png" type="image/png">
+<title>FAQ · Hyper-V Health Check · CloudLabs</title>
+<meta name="description" content="Frequently asked questions about CloudLabs Hyper-V and Windows Server health checks. Remote-first, no agents installed, Dutch or English delivery.">
+<link rel="canonical" href="https://cldlbs.com/faq.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/faq.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/faq.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cldlbs.com/faq.html">
+<meta property="og:title" content="FAQ · Hyper-V Health Check · CloudLabs">
+<meta property="og:description" content="Answers to common questions about CloudLabs engagements: preparation, access, duration, deliverables, and pricing.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"Do I need to install anything before the health check?",
+      "acceptedAnswer":{"@type":"Answer","text":"No. CloudLabs works remote-first via a secure remote session (Teams, AnyDesk, or equivalent). No agents or software are installed on your servers. All PowerShell scripts are run by you or visibly under supervision — you stay in control at all times."}
+    },
+    {
+      "@type":"Question",
+      "name":"How long does a Hyper-V Cluster Health Check take?",
+      "acceptedAnswer":{"@type":"Answer","text":"A single-site cluster health check typically runs in a 36-hour indicative block spread over several remote sessions. Larger multisite environments or engagements that include remediation take proportionally longer. The intake call sets the scope and gives you a clear estimate before you commit."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does this work for Azure Local (formerly Azure Stack HCI)?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes. CloudLabs covers S2D (Storage Spaces Direct) and Azure Local environments alongside traditional Hyper-V clusters. A readiness assessment for migration to Azure Local is also a standard service."}
+    },
+    {
+      "@type":"Question",
+      "name":"What do I receive at the end?",
+      "acceptedAnswer":{"@type":"Answer","text":"You receive a customer-facing .docx report with findings ranked by severity, an action list, and optionally the raw PowerShell inventory output. Reports are delivered in Dutch or English, whichever you prefer."}
+    },
+    {
+      "@type":"Question",
+      "name":"Is an NDA standard?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes. An NDA is signed before any work starts. All inventory output and configuration data stays with you — it is never stored by CloudLabs beyond the duration of the engagement."}
+    },
+    {
+      "@type":"Question",
+      "name":"How is the rate structured?",
+      "acceptedAnswer":{"@type":"Answer","text":"CloudLabs charges €165 per hour on a time-and-materials basis. Engagements run against a written service contract for an indicative block of hours (9 to 288). Time is billed as worked; unused hours in the block are not charged."}
+    },
+    {
+      "@type":"Question",
+      "name":"Can you do on-site work?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes, when warranted. On-site work is possible and travel and accommodation are invoiced at cost. Most engagements are completed fully remote."}
+    },
+    {
+      "@type":"Question",
+      "name":"What do I need to prepare?",
+      "acceptedAnswer":{"@type":"Answer","text":"Very little. A brief topology overview (number of hosts, storage type, Windows version) helps scope the engagement. The intake call fills in the rest — no formal documentation is required upfront."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .faq-list{margin-top:24px;display:flex;flex-direction:column;gap:6px;max-width:80ch}
+  .faq-item{border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .2s}
+  .faq-item.open{border-color:var(--line-strong)}
+  .faq-q{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;
+    background:transparent;border:0;color:var(--ink);text-align:left;
+    font-family:var(--body);font-size:15px;font-weight:500;line-height:1.4;
+    padding:16px 18px;cursor:pointer;
+  }
+  .faq-q:hover{color:var(--cyan)}
+  .faq-q .chevron{
+    flex-shrink:0;width:20px;height:20px;border-radius:50%;
+    border:1px solid var(--line-strong);color:var(--ink-faint);
+    display:grid;place-items:center;font-size:11px;
+    transition:transform .25s,background .2s,color .2s;
+  }
+  .faq-item.open .faq-q .chevron{transform:rotate(180deg);background:var(--cyan);color:#062032;border-color:var(--cyan)}
+  .faq-a{
+    max-height:0;overflow:hidden;
+    transition:max-height .35s ease,padding .25s ease;
+  }
+  .faq-a-inner{
+    padding:0 18px 16px;color:var(--ink-dim);font-size:14px;line-height:1.7;
+  }
+  .faq-a-inner a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .faq-item.open .faq-a{max-height:600px}
+  .faq-categories{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .cat-btn{
+    appearance:none;background:rgba(255,255,255,.02);border:1px solid var(--line);
+    color:var(--ink-dim);font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;padding:6px 12px;border-radius:999px;cursor:pointer;transition:all .15s;
+  }
+  .cat-btn:hover,.cat-btn.active{background:rgba(95,227,255,.12);border-color:var(--cyan);color:var(--cyan)}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="faq.html" aria-current="page"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <div class="eyebrow">/08 · FAQ</div>
+    <h1 style="font-size:clamp(22px,4.2vw,34px);font-weight:600;margin-bottom:6px">
+      <span lang="en">Common questions.</span>
+      <span lang="nl">Veelgestelde vragen.</span>
+    </h1>
+    <p class="lede" style="margin-bottom:20px">
+      <span lang="en">Everything you need to know before starting an engagement.</span>
+      <span lang="nl">Alles wat u wilt weten voordat een opdracht van start gaat.</span>
+    </p>
+
+    <!-- English FAQ -->
+    <div lang="en">
+      <div class="faq-categories anim-fade anim-up" role="group" aria-label="Filter questions">
+        <button class="cat-btn active" data-cat="all">All</button>
+        <button class="cat-btn" data-cat="access">Access &amp; setup</button>
+        <button class="cat-btn" data-cat="scope">Scope &amp; duration</button>
+        <button class="cat-btn" data-cat="deliverables">Deliverables</button>
+        <button class="cat-btn" data-cat="commercial">Commercial</button>
+      </div>
+
+      <div class="faq-list anim-stagger" id="faq-en">
+        <div class="faq-item" data-cat="access">
+          <button class="faq-q" aria-expanded="false">
+            <span lang="en">Do I need to install anything before the health check?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              No. CloudLabs works remote-first via a secure session (Microsoft Teams, AnyDesk, or equivalent). No agents or monitoring software are installed on your servers. All PowerShell scripts are run by you, or visibly under supervision — you remain in control at all times.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="access">
+          <button class="faq-q" aria-expanded="false">
+            <span>What access do you need to my environment?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Read-only access to the Hyper-V hosts and cluster is sufficient for inventory and analysis. For remediation steps you will share a session so that commands are always executed by someone on your side. Credentials are never stored.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="scope">
+          <button class="faq-q" aria-expanded="false">
+            <span>How long does a Hyper-V Cluster Health Check take?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              A single-site cluster health check runs in a 36-hour indicative block, typically spread across several sessions. Larger multisite environments or engagements that include remediation take proportionally longer. The intake call establishes scope and gives you a firm estimate before any commitment.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="scope">
+          <button class="faq-q" aria-expanded="false">
+            <span>Does this work for Azure Local (formerly Azure Stack HCI)?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Yes. CloudLabs covers S2D (Storage Spaces Direct) and Azure Local alongside traditional Hyper-V clusters. A readiness assessment for migration to Azure Local is also a standard service — including firmware baseline, driver compatibility, and network prerequisites.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="scope">
+          <button class="faq-q" aria-expanded="false">
+            <span>What do I need to prepare?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Very little. A brief topology overview — number of hosts, storage type, Windows version — is helpful for scoping. The intake call fills in the rest. No formal documentation is required upfront.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="deliverables">
+          <button class="faq-q" aria-expanded="false">
+            <span>What do I receive at the end?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              A customer-facing <strong>.docx report</strong> with findings ranked by severity and recommended remediation steps. On request: an action list (plain text, ready to paste into your ticketing system) and the raw PowerShell inventory output. Reports are delivered in Dutch or English, whichever you prefer.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="deliverables">
+          <button class="faq-q" aria-expanded="false">
+            <span>Is an NDA standard?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Yes. An NDA is signed before any work starts. All inventory output and configuration data stays with you — it is never stored by CloudLabs beyond the duration of the engagement.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="commercial">
+          <button class="faq-q" aria-expanded="false">
+            <span>How is the rate structured?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              CloudLabs charges <strong>€165 per hour</strong> on a time-and-materials basis. Engagements run against a written service contract for an indicative block of hours (9 to 288). Time is billed as worked. Unused hours in the block are not charged. Blocks can be topped up at any point. See the <a href="engagement.html">Engagement page</a> for the full rate card.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="commercial">
+          <button class="faq-q" aria-expanded="false">
+            <span>Can you do on-site work?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Yes, when warranted. On-site work is possible; travel and accommodation are invoiced at cost. Most engagements are completed fully remote without any loss of depth or quality.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="commercial">
+          <button class="faq-q" aria-expanded="false">
+            <span>Do you work with procurement / purchase orders?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Yes. CloudLabs can work via a formal purchase order process. Invoice payment terms are 30 days. VAT applies for EU clients; reverse-charge applies for EU businesses outside the Netherlands where applicable.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dutch FAQ -->
+    <div lang="nl">
+      <div class="faq-categories anim-fade anim-up" role="group" aria-label="Vragen filteren">
+        <button class="cat-btn active" data-cat-nl="all">Alles</button>
+        <button class="cat-btn" data-cat-nl="access">Toegang &amp; setup</button>
+        <button class="cat-btn" data-cat-nl="scope">Scope &amp; duur</button>
+        <button class="cat-btn" data-cat-nl="deliverables">Oplevering</button>
+        <button class="cat-btn" data-cat-nl="commercial">Commercieel</button>
+      </div>
+
+      <div class="faq-list anim-stagger" id="faq-nl">
+        <div class="faq-item" data-cat="access">
+          <button class="faq-q" aria-expanded="false">
+            <span>Moet ik iets installeren voor de health check?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Nee. CloudLabs werkt remote-first via een beveiligde sessie (Microsoft Teams, AnyDesk of vergelijkbaar). Er worden geen agents of monitoring-software op uw servers geïnstalleerd. Alle PowerShell-scripts worden door u, of zichtbaar onder begeleiding, uitgevoerd — u behoudt altijd de controle.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="access">
+          <button class="faq-q" aria-expanded="false">
+            <span>Welke toegang heeft u nodig tot mijn omgeving?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Leestoegang tot de Hyper-V-hosts en het cluster is voldoende voor inventarisatie en analyse. Bij herstelwerkzaamheden werkt u in een gedeelde sessie, zodat commando's altijd door iemand aan uw kant worden uitgevoerd. Inloggegevens worden nooit opgeslagen.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="scope">
+          <button class="faq-q" aria-expanded="false">
+            <span>Hoe lang duurt een Hyper-V Cluster Health Check?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Een single-site cluster health check loopt op een richtblok van 36 uur, verdeeld over meerdere sessies. Grotere multisite-omgevingen of opdrachten met herstelwerkzaamheden vergen evenredig meer tijd. De intake bepaalt de scope en geeft u een duidelijke schatting vóór u zich vastlegt.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="scope">
+          <button class="faq-q" aria-expanded="false">
+            <span>Werkt dit ook voor Azure Local (voorheen Azure Stack HCI)?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Ja. CloudLabs behandelt S2D (Storage Spaces Direct) en Azure Local naast traditionele Hyper-V-clusters. Een readiness-assessment voor migratie naar Azure Local is ook een standaard dienst — inclusief firmware-baseline, driver-compatibiliteit en netwerkvereisten.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="scope">
+          <button class="faq-q" aria-expanded="false">
+            <span>Wat moet ik voorbereiden?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Heel weinig. Een kort topologie-overzicht — aantal hosts, opslagtype, Windows-versie — helpt bij de scopebepaling. De intake vult de rest in. Formele documentatie is van tevoren niet nodig.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="deliverables">
+          <button class="faq-q" aria-expanded="false">
+            <span>Wat ontvang ik aan het einde?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Een klantgericht <strong>.docx-rapport</strong> met bevindingen op volgorde van ernst en aanbevolen herstelstappen. Op verzoek: een actielijst (platte tekst, klaar om in uw ticketsysteem te plakken) en de ruwe PowerShell-inventarisoutput. Rapporten worden geleverd in het Nederlands of Engels, naar uw voorkeur.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="deliverables">
+          <button class="faq-q" aria-expanded="false">
+            <span>Is een NDA standaard?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Ja. Een NDA wordt getekend vóór het begin van de werkzaamheden. Alle inventaris- en configuratiedata blijft bij u — het wordt door CloudLabs niet opgeslagen buiten de looptijd van de opdracht.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="commercial">
+          <button class="faq-q" aria-expanded="false">
+            <span>Hoe is het tarief opgebouwd?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              CloudLabs rekent <strong>€ 165 per uur</strong> op nacalculatiebasis. Opdrachten lopen onder een schriftelijk servicecontract met een richtblok van uren (9 tot 288). Tijd wordt gefactureerd als gewerkt. Niet-gebruikte uren worden niet in rekening gebracht. Blokken kunnen op elk moment worden bijgevuld. Zie de <a href="engagement.html">Inzet-pagina</a> voor het volledige tarievenoverzicht.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="commercial">
+          <button class="faq-q" aria-expanded="false">
+            <span>Kunt u ook on-site werken?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Ja, wanneer dat nuttig is. On-site werk is mogelijk; reis- en verblijfskosten worden op nacalculatie gefactureerd. De meeste opdrachten worden volledig remote afgerond, zonder verlies van diepgang of kwaliteit.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-cat="commercial">
+          <button class="faq-q" aria-expanded="false">
+            <span>Werkt u met inkooporders?</span>
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="faq-a" role="region">
+            <div class="faq-a-inner">
+              Ja. CloudLabs kan werken via een formeel inkooporderproces. Betalingstermijn op factuur is 30 dagen. BTW is van toepassing voor EU-klanten; de verleggingsregeling geldt voor EU-bedrijven buiten Nederland waar van toepassing.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-row" style="margin-top:32px">
+      <a class="btn primary" href="book.html"><span lang="en">Book a health check</span><span lang="nl">Plan een health check</span><span class="arr">→</span></a>
+      <a class="btn" href="calculator.html"><span lang="en">Estimate hours</span><span lang="nl">Schat uren in</span><span class="arr">→</span></a>
+    </div>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="book.html" lang="en">Book</a><a href="book.html" lang="nl">Boek</a>
+    <a href="privacy.html" lang="en">Privacy</a><a href="privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.2.0</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+(function(){
+  /* Accordion */
+  document.querySelectorAll('.faq-q').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var item = btn.closest('.faq-item');
+      var isOpen = item.classList.contains('open');
+      /* Close all in same list */
+      var list = item.closest('.faq-list');
+      list.querySelectorAll('.faq-item.open').forEach(function(o){
+        o.classList.remove('open');
+        o.querySelector('.faq-q').setAttribute('aria-expanded','false');
+      });
+      if(!isOpen){
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded','true');
+      }
+    });
+  });
+
+  /* Category filter */
+  function bindFilter(catAttr, listId){
+    var btns = document.querySelectorAll('[' + catAttr + ']');
+    var items = document.querySelectorAll('#' + listId + ' .faq-item');
+    btns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        btns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var cat = btn.getAttribute(catAttr);
+        items.forEach(function(item){
+          var match = cat === 'all' || item.getAttribute('data-cat') === cat;
+          item.style.display = match ? '' : 'none';
+        });
+      });
+    });
+  }
+  bindFilter('data-cat', 'faq-en');
+  bindFilter('data-cat-nl', 'faq-nl');
+})();
+</script>
+</body>
+</html>

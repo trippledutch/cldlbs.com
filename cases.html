@@ -1,0 +1,217 @@
+<!doctype html>
+<!-- CloudLabs · v0.2.0 · Cases -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="favicon.png" type="image/png">
+<title>Case Studies · Hyper-V Consultancy · CloudLabs</title>
+<meta name="description" content="CloudLabs case studies: real Hyper-V and Windows Server cluster engagements. Anonymised for client confidentiality.">
+<link rel="canonical" href="https://cldlbs.com/cases.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/cases.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/cases.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cldlbs.com/cases.html">
+<meta property="og:title" content="Case Studies · CloudLabs">
+<meta property="og:description" content="Anonymised Hyper-V cluster engagements: health checks, migrations, and remediation from CloudLabs.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .cases{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:24px}
+  .case-card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));border-radius:14px;padding:22px 20px;position:relative;overflow:hidden;transition:border-color .2s}
+  .case-card:hover{border-color:var(--line-strong)}
+  .case-card::before{content:"";position:absolute;inset:0;border-radius:14px;opacity:0;background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(95,227,255,.07),transparent 70%);transition:opacity .3s}
+  .case-card:hover::before{opacity:1}
+  .case-meta{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .case-sector{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);background:rgba(95,227,255,.1);border:1px solid rgba(95,227,255,.25);border-radius:999px;padding:3px 10px}
+  .case-hours{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .case-card h3{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px;line-height:1.3}
+  .case-card .situation{font-size:13.5px;color:var(--ink-dim);line-height:1.65;margin-bottom:14px}
+  .case-results{display:flex;flex-direction:column;gap:6px;padding-top:14px;border-top:1px solid var(--line)}
+  .case-result{display:flex;align-items:start;gap:8px;font-size:13px;color:var(--ink-dim);line-height:1.5}
+  .case-result::before{content:"✓";color:var(--green);font-family:var(--mono);font-size:11px;margin-top:2px;flex-shrink:0}
+  .case-placeholder{border-style:dashed;opacity:.55}
+  .case-placeholder .situation{font-style:italic}
+  .notice{background:rgba(95,227,255,.06);border:1px solid rgba(95,227,255,.2);border-radius:10px;padding:14px 16px;font-size:13.5px;color:var(--ink-dim);margin-bottom:24px;line-height:1.6}
+  .notice strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="cases.html" aria-current="page"><span class="n">09</span><span lang="en">Cases</span><span lang="nl">Cases</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <div class="eyebrow">/09 · <span lang="en">Case studies</span><span lang="nl">Cases</span></div>
+    <h1 style="font-size:clamp(22px,4.2vw,34px);font-weight:600;margin-bottom:10px">
+      <span lang="en">Real engagements. Anonymised.</span>
+      <span lang="nl">Echte opdrachten. Geanonimiseerd.</span>
+    </h1>
+
+    <p class="notice anim-fade anim-up">
+      <span lang="en"><strong>Confidentiality first.</strong> All cases below are anonymised at the client's request. Sector, infrastructure type, and outcomes are accurate; identifying details have been removed. References available on request.</span>
+      <span lang="nl"><strong>Vertrouwelijkheid voorop.</strong> Alle onderstaande cases zijn op verzoek van de klant geanonimiseerd. Sector, infrastructuurtype en resultaten zijn correct; identificerende details zijn verwijderd. Referenties beschikbaar op aanvraag.</span>
+    </p>
+
+    <div class="cases anim-stagger">
+
+      <!-- Case 1 -->
+      <div class="case-card">
+        <div class="case-meta">
+          <span class="case-sector"><span lang="en">Financial services</span><span lang="nl">Financiële diensten</span></span>
+          <span class="case-hours">36 h</span>
+        </div>
+        <h3>
+          <span lang="en">Cluster health check — undetected firmware drift</span>
+          <span lang="nl">Cluster health check — onopgemerkte firmware-drift</span>
+        </h3>
+        <p class="situation">
+          <span lang="en">A 6-node Hyper-V cluster running production workloads had not had a structured review in three years. The client suspected storage performance issues but could not pinpoint a cause.</span>
+          <span lang="nl">Een 6-node Hyper-V-cluster met productiewerklasten had drie jaar geen gestructureerde review gehad. De klant vermoedde opslagprestatieproblemen maar kon de oorzaak niet achterhalen.</span>
+        </p>
+        <div class="case-results">
+          <div class="case-result"><span lang="en">Firmware version mismatch across nodes identified — two hosts running a build with a known NVMe stability regression.</span><span lang="nl">Firmware-versieverschil tussen nodes vastgesteld — twee hosts draaiden een build met een bekende NVMe-stabiliteitsfout.</span></div>
+          <div class="case-result"><span lang="en">CSV ownership imbalance causing hidden I/O bottleneck documented and corrected.</span><span lang="nl">Eigenaarsonbalans van CSV veroorzaakte verborgen I/O-knelpunt — gedocumenteerd en gecorrigeerd.</span></div>
+          <div class="case-result"><span lang="en">Full remediation completed within the 36-hour block.</span><span lang="nl">Volledige herstelwerkzaamheden afgerond binnen het 36-uurblok.</span></div>
+        </div>
+      </div>
+
+      <!-- Case 2 -->
+      <div class="case-card">
+        <div class="case-meta">
+          <span class="case-sector"><span lang="en">Healthcare</span><span lang="nl">Gezondheidszorg</span></span>
+          <span class="case-hours">72 h</span>
+        </div>
+        <h3>
+          <span lang="en">Multisite cluster — pre-migration assessment</span>
+          <span lang="nl">Multisite cluster — pre-migratie assessment</span>
+        </h3>
+        <p class="situation">
+          <span lang="en">A hospital group with two datacentre sites planned a Windows Server 2019 → 2022 rolling upgrade while maintaining 99.9% uptime for clinical systems. The internal team needed an independent second opinion on the upgrade sequence.</span>
+          <span lang="nl">Een ziekenhuisgroep met twee datacentrumlocaties plande een rolling upgrade van Windows Server 2019 naar 2022, met behoud van 99,9% uptime voor klinische systemen. Het interne team had behoefte aan een onafhankelijk second opinion over de upgradereeks.</span>
+        </p>
+        <div class="case-results">
+          <div class="case-result"><span lang="en">Quorum configuration risk identified for the inter-site stretch scenario — corrected before upgrade began.</span><span lang="nl">Quorumconfiguratie-risico vastgesteld voor het intersite-stretchscenario — gecorrigeerd vóór aanvang upgrade.</span></div>
+          <div class="case-result"><span lang="en">Node-by-node upgrade playbook delivered; upgrade completed without unplanned downtime.</span><span lang="nl">Node-voor-node upgrade-playbook opgeleverd; upgrade afgerond zonder ongeplande downtime.</span></div>
+          <div class="case-result"><span lang="en">Post-upgrade validation report included in deliverable.</span><span lang="nl">Post-upgrade validatierapport opgenomen in oplevering.</span></div>
+        </div>
+      </div>
+
+      <!-- Case 3 -->
+      <div class="case-card">
+        <div class="case-meta">
+          <span class="case-sector"><span lang="en">Logistics</span><span lang="nl">Logistiek</span></span>
+          <span class="case-hours">144 h</span>
+        </div>
+        <h3>
+          <span lang="en">S2D / Azure Local readiness &amp; migration</span>
+          <span lang="nl">S2D / Azure Local readiness &amp; migratie</span>
+        </h3>
+        <p class="situation">
+          <span lang="en">A logistics company running 40+ VMs on aging SAN-backed Hyper-V wanted to evaluate a move to Storage Spaces Direct ahead of a hardware refresh cycle. No internal S2D expertise existed.</span>
+          <span lang="nl">Een logistiek bedrijf met 40+ VM's op verouderd SAN-gebaseerd Hyper-V wilde een overstap naar Storage Spaces Direct evalueren vóór een hardware-verversingsronde. Interne S2D-expertise ontbrak.</span>
+        </p>
+        <div class="case-results">
+          <div class="case-result"><span lang="en">Hardware compatibility matrix built against proposed HCL — three originally specified NIC models removed and replaced before purchase.</span><span lang="nl">Hardware-compatibiliteitsmatrix opgesteld aan de hand van de voorgestelde HCL — drie oorspronkelijk gespecificeerde NIC-modellen vervangen vóór inkoop.</span></div>
+          <div class="case-result"><span lang="en">Network redesign for RDMA/RoCE delivered; network team briefed and validated configuration.</span><span lang="nl">Netwerkontwerp voor RDMA/RoCE opgeleverd; netwerkteam gebrieft en configuratie gevalideerd.</span></div>
+          <div class="case-result"><span lang="en">Migration runbook written; all 40+ VMs migrated without data loss.</span><span lang="nl">Migratie-runbook geschreven; alle 40+ VM's gemigreerd zonder dataverlies.</span></div>
+        </div>
+      </div>
+
+      <!-- Placeholder slot -->
+      <div class="case-card case-placeholder">
+        <div class="case-meta">
+          <span class="case-sector"><span lang="en">Your sector</span><span lang="nl">Uw sector</span></span>
+          <span class="case-hours">?</span>
+        </div>
+        <h3>
+          <span lang="en">Your engagement here</span>
+          <span lang="nl">Uw opdracht hier</span>
+        </h3>
+        <p class="situation">
+          <span lang="en">References are available on request. Happy to connect you with a past client in a comparable environment.</span>
+          <span lang="nl">Referenties beschikbaar op aanvraag. Graag breng ik u in contact met een eerdere klant in een vergelijkbare omgeving.</span>
+        </p>
+        <div class="case-results" style="padding-top:14px;border-top:0">
+          <a class="btn primary" href="book.html" style="width:fit-content"><span lang="en">Start a conversation</span><span lang="nl">Start een gesprek</span><span class="arr">→</span></a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="cta-row" style="margin-top:28px">
+      <a class="btn primary" href="book.html"><span lang="en">Book a health check</span><span lang="nl">Plan een health check</span><span class="arr">→</span></a>
+      <a class="btn" href="services.html"><span lang="en">All services</span><span lang="nl">Alle diensten</span><span class="arr">→</span></a>
+    </div>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="book.html" lang="en">Book</a><a href="book.html" lang="nl">Boek</a>
+    <a href="privacy.html" lang="en">Privacy</a><a href="privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.2.0</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

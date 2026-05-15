@@ -1,0 +1,366 @@
+<!doctype html>
+<!-- CloudLabs · v0.2.0 · Calculator -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="favicon.png" type="image/png">
+<title>Engagement Calculator · Estimate Your Health Check · CloudLabs</title>
+<meta name="description" content="Estimate the scope and cost of a Hyper-V Cluster Health Check. Answer four questions and get an indicative hour block and price range instantly.">
+<link rel="canonical" href="https://cldlbs.com/calculator.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/calculator.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/calculator.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cldlbs.com/calculator.html">
+<meta property="og:title" content="Engagement Calculator · CloudLabs">
+<meta property="og:description" content="Estimate scope and cost of your Hyper-V Health Check in under a minute.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .calc-wrap{max-width:680px;margin:0 auto}
+  .calc-step{margin-bottom:28px}
+  .calc-step .q{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin-bottom:12px}
+  .option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+  .opt{
+    border:1px solid var(--line);background:rgba(255,255,255,.02);border-radius:10px;
+    padding:16px 14px;cursor:pointer;transition:all .18s;text-align:left;
+    font-size:13.5px;color:var(--ink-dim);line-height:1.4;
+    user-select:none;
+  }
+  .opt:hover{border-color:var(--line-strong);color:var(--ink)}
+  .opt.selected{border-color:var(--cyan);background:rgba(95,227,255,.1);color:var(--ink)}
+  .opt .opt-label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+  .opt .opt-sub{font-size:12px;color:var(--ink-faint);line-height:1.45;display:block}
+  .opt.selected .opt-sub{color:var(--ink-dim)}
+
+  .result-box{
+    border:1px solid var(--cyan);background:rgba(95,227,255,.06);
+    border-radius:14px;padding:24px 28px;margin-top:32px;
+    display:none;animation:fadeIn .35s ease;
+  }
+  .result-box.show{display:block}
+  .result-top{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  .result-hours{font-size:52px;font-weight:700;color:var(--ink);line-height:1;font-family:var(--body)}
+  .result-hours span{font-size:16px;font-weight:400;color:var(--ink-dim);margin-left:4px}
+  .result-price{font-family:var(--mono);font-size:18px;color:var(--cyan);letter-spacing:.06em}
+  .result-note{font-size:13.5px;color:var(--ink-dim);line-height:1.6;margin-top:10px;max-width:52ch}
+  .result-breakdown{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px}
+  .result-breakdown .rk{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);padding-top:2px}
+  .result-breakdown .rv{color:var(--ink-dim)}
+  .result-actions{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+
+  .progress-bar{height:3px;background:var(--line);border-radius:2px;margin-bottom:32px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .4s ease;width:0%}
+
+  @media(max-width:500px){
+    .result-hours{font-size:38px}
+    .option-grid{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="cases.html"><span class="n">09</span><span lang="en">Cases</span><span lang="nl">Cases</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <div class="calc-wrap">
+      <div class="eyebrow">/· <span lang="en">Engagement Calculator</span><span lang="nl">Kostenraming</span></div>
+      <h1 style="font-size:clamp(22px,4.2vw,34px);font-weight:600;margin-bottom:8px">
+        <span lang="en">What does your health check cost?</span>
+        <span lang="nl">Wat kost uw health check?</span>
+      </h1>
+      <p style="margin-bottom:28px;max-width:52ch">
+        <span lang="en">Answer four questions. Get an indicative hour block and price range — no commitment, no email required.</span>
+        <span lang="nl">Beantwoord vier vragen. Krijg een richtgevend urenblok en prijsindicatie — vrijblijvend, geen e-mail vereist.</span>
+      </p>
+
+      <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+      <!-- Q1: Topology -->
+      <div class="calc-step" id="step-1">
+        <div class="q"><span lang="en">01 · Cluster topology</span><span lang="nl">01 · Clustertopologie</span></div>
+        <div class="option-grid">
+          <div class="opt" data-q="1" data-v="standalone" data-w="0">
+
+            <span class="opt-label"><span lang="en">Standalone</span><span lang="nl">Standalone</span></span>
+            <span class="opt-sub"><span lang="en">1–2 hosts, no cluster</span><span lang="nl">1–2 hosts, geen cluster</span></span>
+          </div>
+          <div class="opt" data-q="1" data-v="single" data-w="1">
+
+            <span class="opt-label"><span lang="en">Single-site cluster</span><span lang="nl">Single-site cluster</span></span>
+            <span class="opt-sub"><span lang="en">2–8 nodes, one location</span><span lang="nl">2–8 nodes, één locatie</span></span>
+          </div>
+          <div class="opt" data-q="1" data-v="multisite" data-w="2">
+
+            <span class="opt-label"><span lang="en">Multisite cluster</span><span lang="nl">Multisite cluster</span></span>
+            <span class="opt-sub"><span lang="en">2+ sites, stretched</span><span lang="nl">2+ locaties, stretched</span></span>
+          </div>
+          <div class="opt" data-q="1" data-v="large" data-w="3">
+
+            <span class="opt-label"><span lang="en">Large estate</span><span lang="nl">Grote omgeving</span></span>
+            <span class="opt-sub"><span lang="en">8+ nodes or multiple clusters</span><span lang="nl">8+ nodes of meerdere clusters</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2: Storage -->
+      <div class="calc-step" id="step-2">
+        <div class="q"><span lang="en">02 · Storage type</span><span lang="nl">02 · Opslagtype</span></div>
+        <div class="option-grid">
+          <div class="opt" data-q="2" data-v="san" data-w="1">
+
+            <span class="opt-label">SAN / NAS</span>
+            <span class="opt-sub"><span lang="en">Fibre Channel, iSCSI, SMB</span><span lang="nl">Fibre Channel, iSCSI, SMB</span></span>
+          </div>
+          <div class="opt" data-q="2" data-v="s2d" data-w="2">
+
+            <span class="opt-label">S2D / Azure Local</span>
+            <span class="opt-sub"><span lang="en">Hyperconverged, NVMe/SSD</span><span lang="nl">Hyperconverged, NVMe/SSD</span></span>
+          </div>
+          <div class="opt" data-q="2" data-v="local" data-w="0">
+
+            <span class="opt-label"><span lang="en">Local disks</span><span lang="nl">Lokale schijven</span></span>
+            <span class="opt-sub"><span lang="en">Direct-attached storage</span><span lang="nl">Direct-attached storage</span></span>
+          </div>
+          <div class="opt" data-q="2" data-v="unknown" data-w="1">
+
+            <span class="opt-label"><span lang="en">Not sure</span><span lang="nl">Weet ik niet</span></span>
+            <span class="opt-sub"><span lang="en">Mixed or unclear</span><span lang="nl">Gemengd of onduidelijk</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3: Scope -->
+      <div class="calc-step" id="step-3">
+        <div class="q"><span lang="en">03 · Scope</span><span lang="nl">03 · Scope</span></div>
+        <div class="option-grid">
+          <div class="opt" data-q="3" data-v="check" data-w="0">
+
+            <span class="opt-label"><span lang="en">Health Check only</span><span lang="nl">Alleen Health Check</span></span>
+            <span class="opt-sub"><span lang="en">Report + recommendations</span><span lang="nl">Rapport + aanbevelingen</span></span>
+          </div>
+          <div class="opt" data-q="3" data-v="remediation" data-w="2">
+
+            <span class="opt-label"><span lang="en">Check + remediation</span><span lang="nl">Check + herstel</span></span>
+            <span class="opt-sub"><span lang="en">Execute the fixes too</span><span lang="nl">Bevindingen ook oplossen</span></span>
+          </div>
+          <div class="opt" data-q="3" data-v="migration" data-w="3">
+
+            <span class="opt-label"><span lang="en">Migration / upgrade</span><span lang="nl">Migratie / upgrade</span></span>
+            <span class="opt-sub"><span lang="en">Hardware refresh or OS upgrade</span><span lang="nl">Hardwarevernieuwing of OS-upgrade</span></span>
+          </div>
+          <div class="opt" data-q="3" data-v="advisory" data-w="1">
+
+            <span class="opt-label"><span lang="en">Advisory / sparring</span><span lang="nl">Advies / sparring</span></span>
+            <span class="opt-sub"><span lang="en">Design review, escalation</span><span lang="nl">Designreview, escalatie</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4: Urgency -->
+      <div class="calc-step" id="step-4">
+        <div class="q"><span lang="en">04 · Urgency</span><span lang="nl">04 · Urgentie</span></div>
+        <div class="option-grid">
+          <div class="opt" data-q="4" data-v="low" data-w="0">
+
+            <span class="opt-label"><span lang="en">Planned</span><span lang="nl">Gepland</span></span>
+            <span class="opt-sub"><span lang="en">No immediate issues</span><span lang="nl">Geen acute problemen</span></span>
+          </div>
+          <div class="opt" data-q="4" data-v="medium" data-w="0">
+
+            <span class="opt-label"><span lang="en">Upcoming change</span><span lang="nl">Aankomende wijziging</span></span>
+            <span class="opt-sub"><span lang="en">Migration, audit or renewal</span><span lang="nl">Migratie, audit of verlenging</span></span>
+          </div>
+          <div class="opt" data-q="4" data-v="high" data-w="1">
+
+            <span class="opt-label"><span lang="en">Active issues</span><span lang="nl">Actieve problemen</span></span>
+            <span class="opt-sub"><span lang="en">Instability or incidents</span><span lang="nl">Instabiliteit of incidenten</span></span>
+          </div>
+          <div class="opt" data-q="4" data-v="critical" data-w="2">
+
+            <span class="opt-label"><span lang="en">Critical / down</span><span lang="nl">Kritisch / down</span></span>
+            <span class="opt-sub"><span lang="en">Production impact now</span><span lang="nl">Nu productie-impact</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="result-box" id="result-box">
+        <div class="result-top">
+          <div><span class="result-hours" id="res-hours">36</span></div>
+          <div class="result-price" id="res-price">± €5.940</div>
+        </div>
+        <div class="result-note" id="res-note"></div>
+        <div class="result-breakdown">
+          <div class="rk"><span lang="en">Recommended block</span><span lang="nl">Aanbevolen blok</span></div>
+          <div class="rv" id="res-block"></div>
+          <div class="rk"><span lang="en">Service type</span><span lang="nl">Diensttype</span></div>
+          <div class="rv" id="res-type"></div>
+          <div class="rk"><span lang="en">Rate</span><span lang="nl">Tarief</span></div>
+          <div class="rv">€165 / <span lang="en">hour</span><span lang="nl">uur</span> · <span lang="en">excl. VAT</span><span lang="nl">excl. BTW</span></div>
+          <div class="rk"><span lang="en">Note</span><span lang="nl">Let op</span></div>
+          <div class="rv"><span lang="en">Indicative only — actual scope set during intake.</span><span lang="nl">Indicatief — werkelijke scope wordt bepaald in de intake.</span></div>
+        </div>
+        <div class="result-actions">
+          <a class="btn primary" href="book.html"><span lang="en">Book an intake</span><span lang="nl">Plan een intake</span><span class="arr">→</span></a>
+          <a class="btn" href="engagement.html"><span lang="en">See all hour blocks</span><span lang="nl">Zie alle urenblokken</span></a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="book.html" lang="en">Book</a><a href="book.html" lang="nl">Boek</a>
+    <a href="privacy.html" lang="en">Privacy</a><a href="privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.2.0</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+(function(){
+  var answers = {};
+  var RATE = 165;
+
+  var blocks = [9,18,36,72,144,288];
+
+  function calcHours(){
+    var w = 0;
+    for(var q in answers) w += parseInt(answers[q].w, 10);
+    // map total weight to hour block
+    if(w <= 1) return 9;
+    if(w <= 2) return 18;
+    if(w <= 4) return 36;
+    if(w <= 6) return 72;
+    if(w <= 8) return 144;
+    return 288;
+  }
+
+  function serviceLabel(v){
+    var en = {check:'Health Check only',remediation:'Health Check + Remediation',migration:'Cluster Migration / Upgrade',advisory:'Architecture Advisory',standalone:'Standalone Host Review',single:'Single-site Cluster',multisite:'Multisite Cluster',large:'Large Estate Programme'};
+    var nl = {check:'Alleen Health Check',remediation:'Health Check + Herstel',migration:'Clustermigratie / Upgrade',advisory:'Architectuuradvies',standalone:'Standalone Host Review',single:'Single-site Cluster',multisite:'Multisite Cluster',large:'Groot Programma'};
+    var lang = document.documentElement.getAttribute('data-lang') || 'en';
+    return (lang === 'nl' ? nl : en)[v] || v;
+  }
+
+  function noteText(hours){
+    var lang = document.documentElement.getAttribute('data-lang') || 'en';
+    if(lang === 'nl'){
+      if(hours <= 9)  return 'Een intakegesprek en eerste scopedocument. Goed startpunt om de situatie in kaart te brengen.';
+      if(hours <= 18) return 'Compact advies of een beperkte review. Geschikt voor gerichte vragen of een quick scan.';
+      if(hours <= 36) return 'Een volledige single-site Health Check met rapport, findings en aanbevelingen.';
+      if(hours <= 72) return 'Health Check inclusief begeleide uitvoering van de prioritaire aanbevelingen.';
+      if(hours <= 144)return 'Multisite of complexe omgeving. Inclusief migratieplanning of grondige remediatie.';
+      return 'Groot programma voor meerdere clusters of een omvangrijke migratie.';
+    } else {
+      if(hours <= 9)  return 'An intake call and first scope document. A good starting point to map the situation.';
+      if(hours <= 18) return 'Compact advisory or a limited review. Suited to focused questions or a quick scan.';
+      if(hours <= 36) return 'A full single-site Health Check with report, findings and recommendations.';
+      if(hours <= 72) return 'Health Check including guided execution of the priority recommendations.';
+      if(hours <= 144)return 'Multisite or complex environment. Including migration planning or thorough remediation.';
+      return 'Large programme for multiple clusters or a substantial migration.';
+    }
+  }
+
+  function updateProgress(){
+    var answered = Object.keys(answers).length;
+    document.getElementById('progress').style.width = (answered / 4 * 100) + '%';
+  }
+
+  function updateResult(){
+    if(Object.keys(answers).length < 4) return;
+    var hours = calcHours();
+    var price = hours * RATE;
+    var lang  = document.documentElement.getAttribute('data-lang') || 'en';
+
+    document.getElementById('res-hours').innerHTML = hours + '<span>' + (lang==='nl'?' uur':' hours') + '</span>';
+    document.getElementById('res-price').textContent = '± €' + price.toLocaleString('nl-NL');
+    document.getElementById('res-note').textContent  = noteText(hours);
+
+    var scopeV = answers['3'] ? answers['3'].v : '';
+    document.getElementById('res-block').textContent = hours + (lang==='nl'?' uur':' hours');
+    document.getElementById('res-type').textContent  = serviceLabel(scopeV);
+
+    var box = document.getElementById('result-box');
+    box.classList.add('show');
+    setTimeout(function(){ box.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 100);
+  }
+
+  document.querySelectorAll('.opt').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      var q = opt.dataset.q;
+      var v = opt.dataset.v;
+      var w = opt.dataset.w;
+      // deselect siblings
+      document.querySelectorAll('.opt[data-q="'+q+'"]').forEach(function(o){ o.classList.remove('selected'); });
+      opt.classList.add('selected');
+      answers[q] = {v:v, w:w};
+      updateProgress();
+      updateResult();
+    });
+  });
+})();
+</script>
+</body>
+</html>

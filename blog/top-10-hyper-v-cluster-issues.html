@@ -1,0 +1,619 @@
+<!doctype html>
+<!-- CloudLabs · v0.3.3 · Blog · Top 10 Hyper-V Cluster Issues -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="../favicon.png" type="image/png">
+<title>Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026 · CloudLabs</title>
+<meta name="description" content="After hundreds of CloudLabs Hyper-V Cluster Health Checks, ten findings keep coming back. Live Migration networks, witness gaps, CSV imbalance, firmware drift — with PowerShell diagnostics and remediation.">
+<link rel="canonical" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html">
+<link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html">
+<meta property="og:title" content="Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026">
+<meta property="og:description" content="After hundreds of CloudLabs Hyper-V Cluster Health Checks, ten findings keep coming back — with PowerShell diagnostics and remediation.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<meta property="article:published_time" content="2026-05-15">
+<meta property="article:author" content="Hans Vredevoort">
+<meta property="article:section" content="Cluster Health">
+<meta property="article:tag" content="Hyper-V">
+<meta property="article:tag" content="Failover Cluster">
+<meta property="article:tag" content="Windows Server">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BlogPosting",
+  "headline":"Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026",
+  "description":"After hundreds of CloudLabs Hyper-V Cluster Health Checks across Windows Server 2016, 2019, 2022, and 2025 environments, ten findings come back every time. PowerShell diagnostics and remediation included.",
+  "image":"https://cldlbs.com/images/cluster.jpg",
+  "datePublished":"2026-05-15",
+  "dateModified":"2026-05-15",
+  "author":{"@type":"Person","name":"Hans Vredevoort","url":"https://cldlbs.com/about.html","jobTitle":"Hyper-V & Cluster Consultant","worksFor":{"@type":"Organization","name":"CloudLabs"}},
+  "publisher":{"@type":"Organization","name":"CloudLabs","url":"https://cldlbs.com/","logo":{"@type":"ImageObject","url":"https://cldlbs.com/favicon.png"}},
+  "mainEntityOfPage":{"@type":"WebPage","@id":"https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html"},
+  "articleSection":"Cluster Health",
+  "keywords":"Hyper-V Cluster Health Check, Windows Server, Failover Cluster, Live Migration, CSV, Witness, Azure Local, 2026"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://cldlbs.com/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://cldlbs.com/blog.html"},
+    {"@type":"ListItem","position":3,"name":"Hyper-V Cluster Health Check: Top 10 Issues","item":"https://cldlbs.com/blog/top-10-hyper-v-cluster-issues.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"How long does a Hyper-V Cluster Health Check take?",
+      "acceptedAnswer":{"@type":"Answer","text":"A typical engagement for a cluster of up to eight nodes runs two to three working days: one day of PowerShell-based inventory the customer runs themselves, one day of analysis, half a day of reporting and walkthrough."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does a Health Check impact production?",
+      "acceptedAnswer":{"@type":"Answer","text":"The inventory scripts are read-only and safe to run during business hours. The optional Test-Cluster validation with storage tests must run outside business hours because it temporarily takes LUNs offline. We always schedule that with the customer in advance."}
+    },
+    {
+      "@type":"Question",
+      "name":"What is the difference between a Health Check and an audit?",
+      "acceptedAnswer":{"@type":"Answer","text":"A Health Check is technical, focused on operational stability, performance, and supportability. An audit is broader and usually covers security and compliance too. We deliver Health Checks; for audits we partner."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does this work for Azure Local or Azure Stack HCI clusters?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes, with adjusted scope. We replace Storage Fabric and Storage Array sections with a Storage Spaces Direct section."}
+    },
+    {
+      "@type":"Question",
+      "name":"Do you offer remediation, or only advice?",
+      "acceptedAnswer":{"@type":"Answer","text":"Both. A Health Check can stand alone, or feed into a remediation engagement where we work through the findings with the customer."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .article{max-width:75ch;margin-top:8px}
+  .article .breadcrumb{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:18px}
+  .article .breadcrumb a{color:var(--ink-dim);text-decoration:none}
+  .article .breadcrumb a:hover{color:var(--cyan)}
+  .article h1{font-size:clamp(24px,4.4vw,36px);font-weight:600;line-height:1.2;margin:0 0 14px}
+  .article .meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:28px}
+  .article .lede{font-size:17px;line-height:1.6;color:var(--ink-dim);margin-bottom:18px}
+  .article h2{font-size:21px;font-weight:600;line-height:1.3;margin:40px 0 14px;color:var(--ink)}
+  .article h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+  .article p{font-size:15px;line-height:1.7;color:var(--ink-dim);margin:0 0 14px}
+  .article ul,.article ol{font-size:15px;line-height:1.7;color:var(--ink-dim);padding-left:22px;margin:0 0 14px}
+  .article li{margin-bottom:6px}
+  .article a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .article strong{color:var(--ink)}
+  .article code{font-family:var(--mono);font-size:13px;background:rgba(95,227,255,.08);color:var(--cyan);padding:1px 6px;border-radius:4px}
+  .article pre{background:rgba(15,24,50,.7);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink);margin:0 0 18px;line-height:1.55}
+  .article pre code{background:none;color:inherit;padding:0}
+  .article blockquote{border-left:2px solid var(--cyan);padding:6px 18px;margin:18px 0;color:var(--ink);font-style:italic;background:rgba(95,227,255,.04)}
+  .callout{border:1px solid var(--line-strong);border-radius:10px;padding:14px 18px;margin:18px 0;background:rgba(95,227,255,.04)}
+  .callout strong{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .mid-cta{border:1px solid var(--cyan);border-radius:12px;padding:22px 24px;margin:32px 0;background:linear-gradient(135deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .mid-cta p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 12px}
+  .mid-cta a{color:var(--cyan);font-weight:600;font-size:15px;text-decoration:none;border-bottom:0;display:inline-flex;align-items:center;gap:6px}
+  .mid-cta a:hover{color:var(--ink)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 28px;background:rgba(255,255,255,.02)}
+  .toc-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .toc ol{padding-left:20px;margin:0;font-size:14px;line-height:1.7}
+  .toc a{color:var(--ink-dim);text-decoration:none;border-bottom:0}
+  .toc a:hover{color:var(--cyan)}
+  .faq-block{margin-top:40px}
+  .faq-block h2{margin-bottom:18px}
+  .faq-q{font-size:16px;font-weight:600;color:var(--ink);margin:18px 0 6px}
+  .related{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+  .related h3{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .related ul{list-style:none;padding:0;margin:0}
+  .related li{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="../index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="../index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="../services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="../method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="../findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="../engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="../about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="../book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="../faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="../blog.html" aria-current="page"><span class="n">09</span><span lang="en">Blog</span><span lang="nl">Blog</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <article class="article">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../index.html"><span lang="en">Home</span><span lang="nl">Home</span></a> ·
+        <a href="../blog.html">Blog</a> ·
+        <span lang="en">Hyper-V Cluster Health Check: Top 10 Issues</span>
+        <span lang="nl">Hyper-V Cluster Health Check: 10 issues</span>
+      </nav>
+
+      <!-- ============= ENGLISH ============= -->
+      <div lang="en">
+        <h1>Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</h1>
+        <div class="meta">By Hans Vredevoort · 15 May 2026 · 14 minute read · Cluster Health</div>
+
+        <p class="lede">After hundreds of independent CloudLabs Hyper-V Cluster Health Checks across Windows Server 2016, 2019, 2022, and 2025 environments, ten findings come back every time. Across industries, cluster sizes, and operations teams. None of them are exotic. Most stay quiet until a patch round, a hardware refresh, or a single switch reboot turns them into a 3 AM Sev-1 incident.</p>
+        <p class="lede">This is the field list. Per issue the cause, the PowerShell to diagnose it, and the remediation we document in the customer-facing report. If you recognise three or more in your own environment, that is not an outlier. That is the average.</p>
+
+        <div class="toc">
+          <div class="toc-title">In this article</div>
+          <ol>
+            <li><a href="#en-1">Live Migration on the wrong network</a></li>
+            <li><a href="#en-2">Witness misconfigured or absent</a></li>
+            <li><a href="#en-3">CSV ownership imbalance</a></li>
+            <li><a href="#en-4">Firmware and driver drift between nodes</a></li>
+            <li><a href="#en-5">Mixed Windows Server build numbers</a></li>
+            <li><a href="#en-6">No anti-affinity for DCs and management VMs</a></li>
+            <li><a href="#en-7">CSV BlockCache off or undersized</a></li>
+            <li><a href="#en-8">Cluster network on a single physical path</a></li>
+            <li><a href="#en-9">Unsupported or unvalidated storage configurations</a></li>
+            <li><a href="#en-10">No documented DR validation</a></li>
+          </ol>
+        </div>
+
+        <h2 id="en-1">1. Live Migration on the wrong network</h2>
+        <p>The single most common finding in CloudLabs Hyper-V Cluster Health Checks. Live Migration falls back to the management or heartbeat VLAN because the dedicated migration network has no IP metric advantage, is not enabled for cluster traffic, or was never added to the explicit per-host Live Migration list. The symptom is rarely a failure. It is slow migrations during patch windows and unexplained latency on cluster heartbeats when multiple VMs move at once.</p>
+        <p>Two configuration planes matter. The <code>Role</code> per cluster network at the cluster level, and the explicit Live Migration network list per host. They are independent. We regularly find clusters where one is correct and the other is forgotten. Full detail in <a href="live-migration-wrong-network.html">Live Migration on the wrong network: a common Hyper-V pitfall</a>.</p>
+
+<pre><code># Cluster network roles
+Get-ClusterNetwork | Select-Object Name, Role, Address, AutoMetric, Metric
+
+# Live Migration network list per host
+Get-VMHost | Select-Object Name, VirtualMachineMigrationEnabled,
+    VirtualMachineMigrationAuthenticationType,
+    VirtualMachineMigrationPerformanceOption,
+    @{N='MigrationNetworks';E={(Get-VMMigrationNetwork).Subnet -join ', '}}
+
+# Actual path used during migration (run during a test move)
+Get-NetTCPConnection -RemotePort 6600 |
+    Select-Object LocalAddress, RemoteAddress, OwningProcess</code></pre>
+
+        <p><strong>Fix:</strong> on every host, restrict the Live Migration network list to the subnet you actually want to use, and confirm that subnet has <code>Role = ClusterAndClient</code> (or <code>Cluster</code> only) at the cluster level. Use <code>Set-VMMigrationNetwork</code> for explicit subnets and priority order. Validate end to end with a manual Live Migration while capturing packets on the source NIC. That is the only way to be sure.</p>
+
+        <div class="callout"><strong>CloudLabs finding template</strong>
+        We score this <em>High</em> when management or heartbeat networks see Live Migration traffic. It directly threatens cluster stability under load. The remediation step is scripted and verified live before sign-off.</div>
+
+        <h2 id="en-2">2. Witness misconfigured or absent</h2>
+        <p>Quorum is the invisible thing keeping a cluster alive when nodes go away. We regularly find two-node clusters with no witness (relying on Dynamic Quorum, which only keeps the cluster alive if the right node survives), File Share Witnesses on a single-node, single-disk fileserver without a UPS, and Disk Witnesses on the same SAN LUN as the CSVs they are meant to protect.</p>
+
+<pre><code>Get-ClusterQuorum | Format-List *
+
+Get-ClusterResource | Where-Object {$_.OwnerGroup -eq 'Cluster Group'} |
+    Format-Table Name, State, OwnerNode, ResourceType</code></pre>
+
+        <p><strong>Rule of thumb.</strong> Single site, two nodes: Cloud Witness, by definition outside your failure domain. Single site, three or more nodes: Cloud Witness unless Azure connectivity is not an option, otherwise a File Share Witness on truly independent infrastructure. Two-site stretched: Cloud Witness or a File Share Witness in a third site, never inside one of the two cluster sites. Disconnected or air-gapped: File Share Witness on documented independent storage and power.</p>
+        <p>Full comparison in <a href="cluster-witness-comparison.html">File Share Witness vs Cloud Witness vs Disk Witness: which to choose</a>.</p>
+
+        <h2 id="en-3">3. CSV ownership imbalance</h2>
+        <p>Cluster Shared Volume ownership concentrates on one node after a patch round, a failover, or a node drain nobody rebalanced afterwards. The symptom is uneven CPU on the coordinator node, and read-heavy workloads experiencing latency spikes that look random unless you correlate them with CSV ownership.</p>
+
+        <p><strong>Diagnose and rebalance:</strong></p>
+<pre><code># Current distribution
+Get-ClusterSharedVolume | Select-Object Name, OwnerNode, State |
+    Group-Object OwnerNode | Select-Object Name, Count
+
+# Rebalance round-robin across active nodes
+$nodes = (Get-ClusterNode | Where-Object State -eq 'Up').Name
+$i = 0
+Get-ClusterSharedVolume | ForEach-Object {
+    Move-ClusterSharedVolume -Name $_.Name -Node $nodes[$i % $nodes.Count]
+    $i++
+}</code></pre>
+
+        <p>We treat this as an ongoing operational task, not a one-time fix. The post-patch checklist in our remediation reports always ends with a CSV rebalance. Deep dive in <a href="csv-ownership-imbalance.html">CSV ownership imbalance: causes and fixes</a>.</p>
+
+        <div class="mid-cta">
+          <p>Half the issues above take less than ten minutes to spot. The other half you only find if you know where to look. A CloudLabs Hyper-V Cluster Health Check maps them in two days with a severity-ranked action list.</p>
+          <a href="../book.html">Schedule a Health Check intro call →</a>
+        </div>
+
+        <h2 id="en-4">4. Firmware and driver drift between nodes</h2>
+        <p>Cluster nodes leave the factory identical and drift apart slowly. One host gets a NIC firmware update during an incident, another a new HBA driver during a planned window, a third neither. Six months in, the cluster fails subtly. Live Migration takes three times as long over an Intel X710 versus a Mellanox CX-4 on what should be identical paths, or storage timeouts hit only one host.</p>
+        <p>This is the leading cause of intermittent cluster instability we investigate. Firmware drift is invisible to most monitoring tools because the values live in the BMC or NIC EEPROM, not in Windows.</p>
+
+        <p><strong>What we collect during a Health Check:</strong></p>
+<pre><code># NIC driver + firmware per node
+Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    Get-NetAdapter | Select-Object PSComputerName, Name, InterfaceDescription,
+        DriverVersion, DriverDate, @{N='Firmware';E={
+            (Get-NetAdapterAdvancedProperty -Name $_.Name -RegistryKeyword '*FirmwareVersion' -ErrorAction SilentlyContinue).RegistryValue
+        }}
+} | Sort-Object PSComputerName, Name
+
+# Storport / MPIO driver versions
+Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    Get-CimInstance Win32_PnPSignedDriver |
+        Where-Object DeviceClass -in 'SCSIADAPTER','SYSTEM' |
+        Select-Object PSComputerName, DeviceName, DriverVersion, DriverDate
+}</code></pre>
+
+        <p><strong>Fix:</strong> treat firmware as configuration. Set a baseline (the vendor solution profile from Dell, HPE, or Lenovo), document it in your runbook, and upgrade the cluster as a unit during a planned window. Drift is detected and reported in every CloudLabs Hyper-V Cluster Health Check with a severity that scales with the size of the gap.</p>
+
+        <h2 id="en-5">5. Mixed Windows Server build numbers</h2>
+        <p>The Cluster Service tolerates short-lived mixed builds during a rolling patch, but we regularly find clusters that have been "mid-patch" for six months. The result is functional regressions where half the nodes are missing a fix, and behaviour that depends on which node owns a resource at the moment it fails.</p>
+
+        <p><strong>Quick check:</strong></p>
+<pre><code>Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    [PSCustomObject]@{
+        Node    = $env:COMPUTERNAME
+        OS      = (Get-CimInstance Win32_OperatingSystem).Caption
+        Build   = (Get-CimInstance Win32_OperatingSystem).BuildNumber
+        UBR     = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR
+        LastBoot= (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+    }
+} | Sort-Object Node</code></pre>
+
+        <p>If the <code>UBR</code> column shows different values across nodes, the cluster is in a state Microsoft Support wants fixed before they will escalate. Patch the cluster as a unit, validate with <code>Test-Cluster</code>, and treat the post-patch state as the new known good.</p>
+
+        <h2 id="en-6">6. No anti-affinity for DCs and management VMs</h2>
+        <p>After a node drain, all your domain controllers cheerfully land on the same surviving host. One host crash takes out every DC at once, and with it authentication for the entire environment, including the management plane you need to recover the cluster. We have seen this happen twice in remediation engagements, both times with a NIC firmware bug on one node as the root cause.</p>
+
+<pre><code># Clustered VMs without anti-affinity
+Get-ClusterGroup | Where-Object GroupType -eq 'VirtualMachine' |
+    Select-Object Name, OwnerNode, AntiAffinityClassNames |
+    Where-Object {-not $_.AntiAffinityClassNames}
+
+# Set anti-affinity for all DCs
+$dcs = Get-ClusterGroup | Where-Object Name -like 'DC*'
+$dcs | ForEach-Object {
+    (Get-ClusterGroup -Name $_.Name).AntiAffinityClassNames =
+        New-Object System.Collections.Specialized.StringCollection
+    (Get-ClusterGroup -Name $_.Name).AntiAffinityClassNames.Add('DomainControllers') | Out-Null
+}</code></pre>
+
+        <p>Anti-affinity is <em>soft</em>: it gets violated when no other valid host exists. That is exactly the right behaviour. The cluster keeps DCs running; it just stops stacking them by default.</p>
+
+        <h2 id="en-7">7. CSV BlockCache off or undersized</h2>
+        <p>CSV BlockCache was opt-in for years, and many older clusters still sit at zero. Turning it on for read-heavy workloads (VDI, fileserver clusters, OLTP databases with high cache locality) can drop read latency by an order of magnitude with no risk to data integrity. It is a read-side cache, not a write buffer.</p>
+
+<pre><code># Current value
+(Get-Cluster).BlockCacheSize
+
+# Enable on a five-node cluster, 2 GB per node
+(Get-Cluster).BlockCacheSize = 2048
+
+# Verify per-CSV cache state
+Get-ClusterSharedVolume | ForEach-Object {
+    $_ | Select-Object Name,
+        @{N='CacheEnabled';E={$_.SharedVolumeInfo.Partition.IsCsvCacheEnabled}}
+}</code></pre>
+
+        <p>The trade-off is RAM. Size against your VM density and confirm in real workloads that the node still has headroom for consolidation under N-1. Do not size BlockCache from the failover-evacuated state.</p>
+
+        <h2 id="en-8">8. Cluster network on a single physical path</h2>
+        <p>Cluster heartbeats riding a single switch or uplink. We see this mostly in lift-and-shift cluster builds where the original two-switch design got value-engineered down in procurement. Result: a switch reboot, stack split, or failing SFP partitions the cluster, and the surviving partition arbitrates poorly because the witness is reachable over that same path.</p>
+        <p>Cluster networks need <strong>Layer 1</strong> redundancy, not just IP-level. Two NICs in the same switch is not redundancy. Teamed NICs across two switches is the production minimum. SET (Switch Embedded Teaming) is preferred over LBFO on any cluster that touches Hyper-V virtual switches.</p>
+        <p>During a Hyper-V Cluster Health Check we trace cluster heartbeat traffic to the physical port, not just the logical NIC name, and document that in the report.</p>
+
+        <h2 id="en-9">9. Unsupported or unvalidated storage configurations</h2>
+        <p>The catch-all. Examples we have written up: iSCSI paths advertised as "RDMA capable" because the NIC supports it, but DCB/PFC is missing switch-side (silently falls back to plain TCP with no warning). SMB Multichannel across mismatched NICs (one 25 GbE, one 10 GbE), with the cluster picking the slower path for half its sessions. MPIO with Round Robin on an active/passive array that strongly prefers one controller. S2D deployments where one node has a different drive bay configuration after a hardware swap, invisible to the cluster but visible in Storage Spaces health.</p>
+
+        <p><strong>Always validate with the native tools:</strong></p>
+<pre><code>Test-Cluster -Include 'Storage','Network','InventoryAll' -ReportName HealthCheck
+
+Get-SmbClientNetworkInterface | Select-Object FriendlyName, RdmaCapable, Speed, IpAddress
+
+Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</code></pre>
+
+        <h2 id="en-10">10. No documented DR validation</h2>
+        <p>Stretched or multisite clusters that have never been failed over end to end. The runbook exists, the storage replication dashboard is green, and nobody has ever actually tried it in production. A CloudLabs Hyper-V Cluster Health Check often surfaces the gap between runbook and reality: DNS TTLs too long, application-layer connection strings hardcoded to one site, witness placement that does not survive the test.</p>
+        <p>We recommend at minimum an annual planned failover, treated as production impact and rehearsed in a maintenance window. The deliverable in this case includes more than findings: also a written DR validation procedure your team can execute themselves.</p>
+
+        <h2>The pattern behind the list</h2>
+        <p>Nine of these ten findings have nothing to do with workload performance. They are quiet configuration debt accumulating across patch cycles, hardware refreshes, and staff changes. They are exactly the type of finding monitoring tools miss, because in isolation each looks correct: a witness exists, a Live Migration network is configured, CSV ownership is valid. The drift lives in the relationship between settings, and the only reliable way to surface that is a structured external review.</p>
+        <p>The <a href="../method.html">CloudLabs method</a> is built around that. Scripted, evidence-based inventory, analysis against Microsoft best practice, and findings ranked by severity. Reports in English or Dutch as a customer-facing <code>.docx</code> with an action list, optionally including raw PowerShell output for your own archive.</p>
+        <p>Recognise three or more issues above? You are not alone, and the fix usually takes no more than one weekly maintenance window.</p>
+        <p><a href="../book.html"><strong>Schedule a Hyper-V Cluster Health Check intro call →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Frequently asked questions</h2>
+
+          <div class="faq-q">How long does a Hyper-V Cluster Health Check take?</div>
+          <p>A typical engagement for a cluster of up to eight nodes runs two to three working days: one day of PowerShell-based inventory the customer runs themselves, one day of analysis, half a day of reporting and walkthrough.</p>
+
+          <div class="faq-q">Does a Health Check impact production?</div>
+          <p>The inventory scripts are read-only and safe to run during business hours. The optional <code>Test-Cluster</code> validation with storage tests must run outside business hours because it temporarily takes LUNs offline. We always schedule that with the customer in advance.</p>
+
+          <div class="faq-q">What is the difference between a Health Check and an audit?</div>
+          <p>A Health Check is technical, focused on operational stability, performance, and supportability. An audit is broader and usually covers security and compliance too. We deliver Health Checks; for audits we partner.</p>
+
+          <div class="faq-q">Does this work for Azure Local or Azure Stack HCI clusters?</div>
+          <p>Yes, with adjusted scope. We replace Storage Fabric and Storage Array sections with a Storage Spaces Direct section. See <a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a>.</p>
+
+          <div class="faq-q">Do you offer remediation, or only advice?</div>
+          <p>Both. A Health Check can stand alone, or feed into a remediation engagement where we work through the findings with the customer.</p>
+        </div>
+      </div>
+
+      <!-- ============= DUTCH ============= -->
+      <div lang="nl">
+        <h1>Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</h1>
+        <div class="meta">Door Hans Vredevoort · 15 mei 2026 · 14 minuten leestijd · Cluster Health</div>
+
+        <p class="lede">Na honderden onafhankelijke CloudLabs Hyper-V Cluster Health Checks in Windows Server 2016, 2019, 2022 en 2025 omgevingen komen tien bevindingen telkens terug. Over branches, schaalgroottes en beheerteams heen. Geen ervan is exotisch. De meeste blijven stil totdat een patch-ronde, een hardware-refresh of één switch-reboot ze om 03:00 's nachts tot een Sev-1 incident maakt.</p>
+        <p class="lede">Dit artikel is de praktijklijst. Per issue de oorzaak, de PowerShell om het te diagnosticeren, en de remediation die wij in het klantgerichte rapport documenteren. Herken je drie of meer in je eigen omgeving? Dat is geen uitschieter, dat is het gemiddelde.</p>
+
+        <div class="toc">
+          <div class="toc-title">In dit artikel</div>
+          <ol>
+            <li><a href="#nl-1">Live Migration over het verkeerde netwerk</a></li>
+            <li><a href="#nl-2">Witness verkeerd geconfigureerd of afwezig</a></li>
+            <li><a href="#nl-3">CSV ownership-onbalans</a></li>
+            <li><a href="#nl-4">Firmware- en driver-drift tussen nodes</a></li>
+            <li><a href="#nl-5">Verschillende Windows Server build-nummers</a></li>
+            <li><a href="#nl-6">Geen anti-affinity voor DC's en management-VM's</a></li>
+            <li><a href="#nl-7">CSV BlockCache uit of te klein</a></li>
+            <li><a href="#nl-8">Cluster-netwerk op één fysiek pad</a></li>
+            <li><a href="#nl-9">Niet-ondersteunde of niet-gevalideerde storage-configuraties</a></li>
+            <li><a href="#nl-10">Geen gedocumenteerde DR-validatie</a></li>
+          </ol>
+        </div>
+
+        <h2 id="nl-1">1. Live Migration over het verkeerde netwerk</h2>
+        <p>De meest voorkomende bevinding in CloudLabs Hyper-V Cluster Health Checks. Live Migration valt terug op het management- of heartbeat-VLAN omdat het toegewezen migratienetwerk geen IP-metric-voordeel heeft, niet is aangezet voor clusterverkeer, of nooit is toegevoegd aan de expliciete Live Migration-lijst per Hyper-V host. Het symptoom is zelden een failure. Wel trage migraties tijdens patch-vensters en onverklaarbare latency op cluster-heartbeats als er meerdere VM's tegelijk verplaatsen.</p>
+        <p>Twee configuratie-vlakken zijn relevant. De <code>Role</code> per cluster-netwerk op clusterniveau, en de expliciete Live Migration-netwerklijst per host. Die zijn onafhankelijk. Wij vinden regelmatig dat één correct staat en de andere vergeten is. Volledige uitleg in <a href="live-migration-wrong-network.html">Live Migration over het verkeerde netwerk: een veelvoorkomende Hyper-V valkuil</a>.</p>
+
+        <p><strong>Diagnose:</strong></p>
+<pre><code># Cluster-netwerkrollen
+Get-ClusterNetwork | Select-Object Name, Role, Address, AutoMetric, Metric
+
+# Live Migration-netwerk per host
+Get-VMHost | Select-Object Name, VirtualMachineMigrationEnabled,
+    VirtualMachineMigrationAuthenticationType,
+    VirtualMachineMigrationPerformanceOption,
+    @{N='MigrationNetworks';E={(Get-VMMigrationNetwork).Subnet -join ', '}}
+
+# Effectief pad tijdens een migratie (uitvoeren tijdens test-move)
+Get-NetTCPConnection -RemotePort 6600 |
+    Select-Object LocalAddress, RemoteAddress, OwningProcess</code></pre>
+
+        <p><strong>Oplossen:</strong> beperk op iedere host de Live Migration-netwerklijst tot het subnet dat je daadwerkelijk wilt gebruiken, en zorg dat dat subnet op het clusterobject <code>Role = ClusterAndClient</code> (of alleen <code>Cluster</code>) heeft. Gebruik <code>Set-VMMigrationNetwork</code> voor expliciete subnets en prioriteitsvolgorde. Valideer end-to-end met een handmatige Live Migration tijdens een packet capture op de bron-NIC. Dat is de enige manier om zekerheid te krijgen.</p>
+
+        <div class="callout"><strong>CloudLabs bevindingen-template</strong>
+        Wij rapporteren dit met severity <em>Hoog</em> wanneer management- of heartbeat-netwerken Live Migration-verkeer zien. Het bedreigt rechtstreeks de cluster-stabiliteit onder load. De remediation-stap is scripted en wordt live geverifieerd vóór sign-off.</div>
+
+        <h2 id="nl-2">2. Witness verkeerd geconfigureerd of afwezig</h2>
+        <p>Quorum is het onzichtbare stuk dat een cluster overeind houdt als nodes verdwijnen. We vinden regelmatig two-node clusters zonder witness (vertrouwend op Dynamic Quorum, dat het cluster alleen overeind houdt zolang de juiste node de overlever is), File Share Witnesses op een single-node, single-disk fileserver zonder UPS, en Disk Witnesses op dezelfde SAN-LUN als de CSV's die ze moeten beschermen.</p>
+
+        <p><strong>Waar te kijken:</strong></p>
+<pre><code>Get-ClusterQuorum | Format-List *
+
+Get-ClusterResource | Where-Object {$_.OwnerGroup -eq 'Cluster Group'} |
+    Format-Table Name, State, OwnerNode, ResourceType</code></pre>
+
+        <p><strong>Beslissingsmatrix als vuistregel.</strong> Single-site twee nodes: Cloud Witness, per definitie buiten je failure domain. Single-site drie of meer nodes: Cloud Witness tenzij Azure-connectivity geen optie is, anders File Share Witness op infrastructuur die echt onafhankelijk is. Two-site stretched: Cloud Witness of een File Share Witness in een derde site, nooit in een van de twee cluster-sites. Disconnected of air-gapped: File Share Witness op gedocumenteerd onafhankelijke storage en voeding.</p>
+        <p>Volledige vergelijking in <a href="cluster-witness-comparison.html">File Share Witness vs Cloud Witness vs Disk Witness: welk type kies je?</a>.</p>
+
+        <h2 id="nl-3">3. CSV ownership-onbalans</h2>
+        <p>Cluster Shared Volume-eigendom stapelt zich op één node na een patch-ronde, een failover, of een node-drain die niemand achteraf herbalanceerd heeft. Het symptoom is ongelijke CPU op de coordinator-node en read-heavy workloads die latency-pieken ervaren die er random uitzien, tenzij je ze correleert met CSV-ownership.</p>
+
+        <p><strong>Diagnose en rebalance:</strong></p>
+<pre><code># Huidige verdeling
+Get-ClusterSharedVolume | Select-Object Name, OwnerNode, State |
+    Group-Object OwnerNode | Select-Object Name, Count
+
+# Rebalance round-robin over actieve nodes
+$nodes = (Get-ClusterNode | Where-Object State -eq 'Up').Name
+$i = 0
+Get-ClusterSharedVolume | ForEach-Object {
+    Move-ClusterSharedVolume -Name $_.Name -Node $nodes[$i % $nodes.Count]
+    $i++
+}</code></pre>
+
+        <p>Wij behandelen dit als een doorlopende operationele taak, niet als eenmalige fix. De post-patch checklist in onze remediation-rapporten eindigt altijd met een CSV-rebalance. Diepere uitleg in <a href="csv-ownership-imbalance.html">CSV ownership-onbalans: oorzaken en oplossingen</a>.</p>
+
+        <div class="mid-cta">
+          <p>De helft van de issues hierboven kost minder dan tien minuten om vast te stellen. De andere helft zie je pas als je weet waar je moet kijken. Een CloudLabs Hyper-V Cluster Health Check brengt het in twee dagen in kaart, met een actielijst op severity.</p>
+          <a href="../book.html">Plan een Health Check kennismaking →</a>
+        </div>
+
+        <h2 id="nl-4">4. Firmware- en driver-drift tussen nodes</h2>
+        <p>Cluster-nodes komen identiek uit de doos en drijven langzaam uit elkaar. Eén host krijgt een NIC-firmware update tijdens een incident, een andere een nieuwe HBA-driver tijdens een gepland onderhoudsvenster, een derde nooit één van beide. Zes maanden later faalt het cluster op subtiele manieren: Live Migration duurt drie keer zo lang over een Intel X710 versus een Mellanox CX-4 op wat identieke paden hoorden te zijn, of storage-timeouts treden alleen op één host op.</p>
+        <p>Dit is de leidende oorzaak van intermitterende cluster-instabiliteit die wij onderzoeken. Firmware-drift is onzichtbaar voor de meeste monitoring-tools, omdat de waarden in de BMC of NIC-EEPROM zitten, niet in Windows.</p>
+
+        <p><strong>Wat we tijdens een Health Check verzamelen:</strong></p>
+<pre><code># NIC driver + firmware per node
+Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    Get-NetAdapter | Select-Object PSComputerName, Name, InterfaceDescription,
+        DriverVersion, DriverDate, @{N='Firmware';E={
+            (Get-NetAdapterAdvancedProperty -Name $_.Name -RegistryKeyword '*FirmwareVersion' -ErrorAction SilentlyContinue).RegistryValue
+        }}
+} | Sort-Object PSComputerName, Name
+
+# Storport / MPIO driver-versies
+Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    Get-CimInstance Win32_PnPSignedDriver |
+        Where-Object DeviceClass -in 'SCSIADAPTER','SYSTEM' |
+        Select-Object PSComputerName, DeviceName, DriverVersion, DriverDate
+}</code></pre>
+
+        <p><strong>Oplossen:</strong> behandel firmware als configuratie. Zet een baseline (vendor solution profile van Dell, HPE of Lenovo), documenteer in je runbook, en upgrade het cluster als geheel tijdens een gepland venster. Drift wordt bij elke CloudLabs Hyper-V Cluster Health Check gedetecteerd en gerapporteerd met een severity die schaalt met de omvang van de afwijking.</p>
+
+        <h2 id="nl-5">5. Verschillende Windows Server build-nummers</h2>
+        <p>De Cluster Service tolereert kortdurende mixed-builds tijdens een rolling patch, maar wij vinden regelmatig clusters die al een half jaar "mid-patch" staan. Het resultaat zijn functionele regressies: een fix in een latere CU is intermitterend omdat de helft van de nodes hem mist, en het gedrag hangt af van welke node een resource bezit op het moment van falen.</p>
+
+        <p><strong>Snelle check:</strong></p>
+<pre><code>Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    [PSCustomObject]@{
+        Node    = $env:COMPUTERNAME
+        OS      = (Get-CimInstance Win32_OperatingSystem).Caption
+        Build   = (Get-CimInstance Win32_OperatingSystem).BuildNumber
+        UBR     = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR
+        LastBoot= (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+    }
+} | Sort-Object Node</code></pre>
+
+        <p>Als de <code>UBR</code>-kolom verschillende waarden toont over nodes, staat het cluster in een toestand die Microsoft Support eerst gerepareerd wil zien voor zij escaleren. Patch het cluster als geheel, valideer met <code>Test-Cluster</code>, en behandel de post-patch toestand als de nieuwe known-good.</p>
+
+        <h2 id="nl-6">6. Geen anti-affinity voor DC's en management-VM's</h2>
+        <p>Na een node-drain belanden alle domain controllers vrolijk op dezelfde overlevende host. Eén host-crash legt dan tegelijk alle DC's stil, en daarmee de authenticatie voor de hele omgeving, inclusief de management-plane die je nodig hebt om het cluster te herstellen. Wij hebben dit twee keer in remediation-opdrachten zien gebeuren, telkens met een NIC-firmware bug op één node als grondoorzaak.</p>
+
+<pre><code># Clustered VM's zonder anti-affinity
+Get-ClusterGroup | Where-Object GroupType -eq 'VirtualMachine' |
+    Select-Object Name, OwnerNode, AntiAffinityClassNames |
+    Where-Object {-not $_.AntiAffinityClassNames}
+
+# Anti-affinity instellen voor alle DC's
+$dcs = Get-ClusterGroup | Where-Object Name -like 'DC*'
+$dcs | ForEach-Object {
+    (Get-ClusterGroup -Name $_.Name).AntiAffinityClassNames =
+        New-Object System.Collections.Specialized.StringCollection
+    (Get-ClusterGroup -Name $_.Name).AntiAffinityClassNames.Add('DomainControllers') | Out-Null
+}</code></pre>
+
+        <p>Anti-affinity is <em>soft</em>: het wordt geschonden als er geen andere geldige host is. Dat is precies het juiste gedrag. Het cluster houdt de DC's draaiend; het stapelt ze alleen niet standaard op.</p>
+
+        <h2 id="nl-7">7. CSV BlockCache uit of te klein</h2>
+        <p>CSV BlockCache was jarenlang opt-in en veel oudere clusters staan nog op nul. Aanzetten voor read-heavy workloads (VDI, fileserver-clusters, OLTP-databases met hoge cache-locality) kan read-latency een orde van grootte verlagen zonder risico voor data-integriteit. Het is een read-side cache, geen write buffer.</p>
+
+<pre><code># Huidige waarde
+(Get-Cluster).BlockCacheSize
+
+# Aanzetten op een vijf-node cluster, 2 GB per node
+(Get-Cluster).BlockCacheSize = 2048
+
+# Per-CSV cache-status verifiëren
+Get-ClusterSharedVolume | ForEach-Object {
+    $_ | Select-Object Name,
+        @{N='CacheEnabled';E={$_.SharedVolumeInfo.Partition.IsCsvCacheEnabled}}
+}</code></pre>
+
+        <p>De trade-off is RAM. Dimensioneer tegen je VM-dichtheid en bevestig in echte workloads dat de node nog headroom heeft voor VM-consolidatie onder N-1 condities. Dimensioneer BlockCache niet vanuit de failover-geëvacueerde toestand.</p>
+
+        <h2 id="nl-8">8. Cluster-netwerk op één fysiek pad</h2>
+        <p>Cluster-heartbeats die via één switch of één uplink lopen. Wij zien dit vooral in lift-and-shift cluster-builds waar het oorspronkelijke twee-switch ontwerp in de inkoopfase is uitgekleed. Resultaat: een switch-reboot, een stack-split of een falende SFP partitioneert het cluster, en de overlevende partitie arbitreert slecht omdat de witness ook via datzelfde pad bereikbaar is.</p>
+        <p>Cluster-netwerken vereisen redundantie op <strong>laag 1</strong>, niet alleen op IP-niveau. Twee NIC's in dezelfde switch is geen redundantie. Geteamde NIC's over twee switches is het minimum voor productie. SET (Switch Embedded Teaming) heeft de voorkeur boven LBFO voor elk cluster dat Hyper-V virtuele switches raakt.</p>
+        <p>Tijdens een Hyper-V Cluster Health Check traceren wij cluster-heartbeat verkeer altijd tot de fysieke poort, niet alleen de logische NIC-naam, en documenteren dat in het rapport.</p>
+
+        <h2 id="nl-9">9. Niet-ondersteunde of niet-gevalideerde storage-configuraties</h2>
+        <p>De vergaarbak. Voorbeelden die wij hebben opgeschreven: iSCSI-paden gepresenteerd als "RDMA capable" omdat de NIC het kan, maar DCB/PFC ontbreekt op switchzijde (valt stilletjes terug op TCP zonder waarschuwing). SMB Multichannel over ongelijksoortige NIC's (één 25 GbE, één 10 GbE), waar het cluster voor de helft van de sessies het tragere pad kiest. MPIO met Round Robin op een active/passive array die sterk één controller voorkeurt. S2D-deployments waar één node na een hardware-swap een afwijkende drive bay-configuratie heeft, onzichtbaar voor het cluster maar zichtbaar in Storage Spaces health.</p>
+
+        <p><strong>Altijd valideren met de native tools:</strong></p>
+<pre><code>Test-Cluster -Include 'Storage','Network','InventoryAll' -ReportName HealthCheck
+
+Get-SmbClientNetworkInterface | Select-Object FriendlyName, RdmaCapable, Speed, IpAddress
+
+Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</code></pre>
+
+        <h2 id="nl-10">10. Geen gedocumenteerde DR-validatie</h2>
+        <p>Stretched- of multisite-clusters die nog nooit end-to-end zijn omgeklapt. Het runbook bestaat, het storage-replicatie dashboard staat groen, en niemand heeft het ooit in productie daadwerkelijk geprobeerd. Een CloudLabs Hyper-V Cluster Health Check brengt vaak het verschil tussen runbook en werkelijkheid aan het licht: DNS-TTL's die te lang zijn, applicatielaag-connectionstrings die hardcoded naar één site verwijzen, witness-plaatsing die de test niet overleeft.</p>
+        <p>We adviseren minimaal een jaarlijkse geplande failover, behandeld als productie-impact en gerepeteerd in een onderhoudsvenster. De oplevering bevat in dit geval niet alleen bevindingen, maar ook een geschreven DR-validatieprocedure die jouw team zelf kan uitvoeren.</p>
+
+        <h2>Het patroon achter de lijst</h2>
+        <p>Negen van deze tien bevindingen hebben niets met workload-performance te maken. Het is stille configuration debt die zich opbouwt over patch-cycli, hardware-refreshes en personeelswissels. Het is óók precies het type bevinding dat monitoring-tools missen, omdat ze in isolatie correct lijken: een witness bestaat, een Live Migration-netwerk is geconfigureerd, CSV-ownership is valide. De drift zit in de relatie tussen instellingen, en de enige betrouwbare manier om dat boven water te krijgen is een gestructureerd extern onderzoek.</p>
+        <p>De <a href="../method.html">CloudLabs werkwijze</a> is precies hierop gebouwd: scripted, evidence-based inventory, analyse tegen Microsoft best practice, en bevindingen op severity gerangschikt. Rapporten worden in Nederlands of Engels geleverd als klantgericht <code>.docx</code> met een actielijst, en optioneel de ruwe PowerShell-output voor je eigen archief.</p>
+        <p>Herken je drie of meer issues hierboven? Je staat niet alleen, en de fix kost meestal niet meer dan één wekelijks onderhoudsvenster.</p>
+        <p><a href="../book.html"><strong>Plan een Hyper-V Cluster Health Check kennismaking →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Veelgestelde vragen</h2>
+
+          <div class="faq-q">Hoe lang duurt een Hyper-V Cluster Health Check?</div>
+          <p>Een typische opdracht voor een cluster tot acht nodes duurt twee tot drie werkdagen: één dag inventarisatie via PowerShell-scripts die de klant zelf uitvoert, één dag analyse, een halve dag rapportage en presentatie.</p>
+
+          <div class="faq-q">Heeft een Health Check impact op productie?</div>
+          <p>De inventarisatie-scripts zijn read-only en kunnen tijdens kantoortijden draaien. De optionele <code>Test-Cluster</code> validatie met storage-tests moet buiten kantoortijden, omdat die LUN's tijdelijk offline neemt. Wij plannen dat altijd vooraf met de klant.</p>
+
+          <div class="faq-q">Wat is het verschil tussen een Health Check en een audit?</div>
+          <p>Een Health Check is technisch en gericht op operationele stabiliteit, performance en supportability. Een audit is breder en raakt vaak ook security en compliance. Wij doen Health Checks; voor audits werken we samen met partners.</p>
+
+          <div class="faq-q">Werkt dit ook voor Azure Local of Azure Stack HCI clusters?</div>
+          <p>Ja, met een aangepaste scope. Storage Fabric en Storage Array secties vervangen we door een Storage Spaces Direct sectie. Zie <a href="azure-local-migration-readiness.html">Azure Local migratie-readiness checklist</a>.</p>
+
+          <div class="faq-q">Bieden jullie ook remediation, of alleen advies?</div>
+          <p>Beide. Een Health Check kan op zichzelf opgeleverd worden, of als startpunt voor een remediation-traject waar wij de gevonden issues samen met de klant oplossen.</p>
+        </div>
+      </div>
+
+      <div class="related">
+        <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
+        <ul>
+          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership-onbalans: oorzaken en oplossingen</span></a></li>
+          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
+          <li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>
+          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie-readiness checklist</span></a></li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
+    <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.3.3</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+</body>
+</html>

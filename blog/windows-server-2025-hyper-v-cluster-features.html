@@ -1,0 +1,603 @@
+<!doctype html>
+<!-- CloudLabs · v0.3.3 · Blog · Windows Server 2025 Hyper-V -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="../favicon.png" type="image/png">
+<title>Windows Server 2025 Hyper-V: What It Really Adds for Cluster Operators · CloudLabs</title>
+<meta name="description" content="The four Windows Server 2025 Hyper-V features that materially matter for cluster operators in 2026: Dynamic CPU compatibility, GPU-P, vTPM 2.0 default, hot-patching — plus the 2012 R2/2016 guest pitfall and upgrade strategy.">
+<link rel="canonical" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html">
+<link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html">
+<meta property="og:title" content="Windows Server 2025 Hyper-V: What It Really Adds for Cluster Operators">
+<meta property="og:description" content="The four Windows Server 2025 Hyper-V features that materially matter for cluster operators — by CloudLabs.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<meta property="article:published_time" content="2026-05-15">
+<meta property="article:author" content="Hans Vredevoort">
+<meta property="article:section" content="Windows Server 2025">
+<meta property="article:tag" content="Windows Server 2025">
+<meta property="article:tag" content="Hyper-V">
+<meta property="article:tag" content="GPU-P">
+<meta property="article:tag" content="vTPM">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BlogPosting",
+  "headline":"Windows Server 2025 Hyper-V: What It Really Adds for Cluster Operators",
+  "description":"The four Windows Server 2025 Hyper-V features that materially matter for cluster operators in 2026: Dynamic CPU compatibility, GPU-P, vTPM 2.0 default, hot-patching — plus the 2012 R2/2016 guest pitfall and upgrade strategy.",
+  "image":"https://cldlbs.com/images/cluster.jpg",
+  "datePublished":"2026-05-15",
+  "dateModified":"2026-05-15",
+  "author":{"@type":"Person","name":"Hans Vredevoort","url":"https://cldlbs.com/about.html","jobTitle":"Hyper-V & Cluster Consultant","worksFor":{"@type":"Organization","name":"CloudLabs"}},
+  "publisher":{"@type":"Organization","name":"CloudLabs","url":"https://cldlbs.com/","logo":{"@type":"ImageObject","url":"https://cldlbs.com/favicon.png"}},
+  "mainEntityOfPage":{"@type":"WebPage","@id":"https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html"},
+  "articleSection":"Windows Server 2025",
+  "keywords":"Windows Server 2025, Hyper-V, Dynamic CPU compatibility, GPU-P, GPU Partitioning, vTPM, hot-patching, cluster rolling upgrade, Azure Arc"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://cldlbs.com/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://cldlbs.com/blog.html"},
+    {"@type":"ListItem","position":3,"name":"Windows Server 2025 Hyper-V","item":"https://cldlbs.com/blog/windows-server-2025-hyper-v-cluster-features.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"Do I really need to move to Windows Server 2025 if my cluster on 2022 runs fine?",
+      "acceptedAnswer":{"@type":"Answer","text":"Not necessarily. Windows Server 2022 remains supported until 2027, with another five years of Extended Support after. The question is whether the new features deliver enough value to bring an upgrade forward. For heterogeneous clusters with live migration issues, GPU workloads, or strict patch window requirements, yes. For stable, homogeneous clusters without those needs, 2025 can wait until natural hardware refresh."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does cluster rolling upgrade work directly from 2019 to 2025?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes. Windows Server 2025 supports cluster rolling upgrade from both 2019 and 2022. The Cluster Functional Level stays on the old version during the upgrade until you explicitly raise it with Update-ClusterFunctionalLevel. Plan a rollback point by leaving this raise as the final step."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does Dynamic CPU compatibility have a performance impact?",
+      "acceptedAnswer":{"@type":"Answer","text":"Negligible in practice. The feature set the VM sees is limited to what all nodes support, so VMs miss feature instructions they would see on a hardware-uniform cluster. For workloads aggressively using specific CPU instructions (some crypto libraries, AVX-512 in HPC workloads) that is a measurable difference. For general workloads the effect is below measurable threshold."}
+    },
+    {
+      "@type":"Question",
+      "name":"Can I use GPU-P and DDA mixed on the same cluster?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes, but not on the same GPU. A physical GPU is either in DDA mode assigned to one VM, or in partitioning mode split across multiple VMs. A host with multiple GPUs can do a mix, for example one H100 in DDA for AI training, two A10s in GPU-P for VDI."}
+    },
+    {
+      "@type":"Question",
+      "name":"What are the licensing terms for hot-patching?",
+      "acceptedAnswer":{"@type":"Answer","text":"Hot-patching on Windows Server 2025 requires an active Software Assurance contract or an Azure Arc connection with Azure Update Manager. For customers without SA or without Azure connectivity, hot-patching is not an option, and traditional reboot cycles continue to apply."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .article{max-width:75ch;margin-top:8px}
+  .article .breadcrumb{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:18px}
+  .article .breadcrumb a{color:var(--ink-dim);text-decoration:none}
+  .article .breadcrumb a:hover{color:var(--cyan)}
+  .article h1{font-size:clamp(24px,4.4vw,36px);font-weight:600;line-height:1.2;margin:0 0 14px}
+  .article .meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:28px}
+  .article .lede{font-size:17px;line-height:1.6;color:var(--ink-dim);margin-bottom:18px}
+  .article h2{font-size:21px;font-weight:600;line-height:1.3;margin:40px 0 14px;color:var(--ink)}
+  .article h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+  .article p{font-size:15px;line-height:1.7;color:var(--ink-dim);margin:0 0 14px}
+  .article ul,.article ol{font-size:15px;line-height:1.7;color:var(--ink-dim);padding-left:22px;margin:0 0 14px}
+  .article li{margin-bottom:6px}
+  .article a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .article strong{color:var(--ink)}
+  .article code{font-family:var(--mono);font-size:13px;background:rgba(95,227,255,.08);color:var(--cyan);padding:1px 6px;border-radius:4px}
+  .article pre{background:rgba(15,24,50,.7);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink);margin:0 0 18px;line-height:1.55}
+  .article pre code{background:none;color:inherit;padding:0}
+  .article blockquote{border-left:2px solid var(--cyan);padding:6px 18px;margin:18px 0;color:var(--ink);font-style:italic;background:rgba(95,227,255,.04)}
+  .callout{border:1px solid var(--line-strong);border-radius:10px;padding:14px 18px;margin:18px 0;background:rgba(95,227,255,.04)}
+  .callout strong{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .mid-cta{border:1px solid var(--cyan);border-radius:12px;padding:22px 24px;margin:32px 0;background:linear-gradient(135deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .mid-cta p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 12px}
+  .mid-cta a{color:var(--cyan);font-weight:600;font-size:15px;text-decoration:none;border-bottom:0;display:inline-flex;align-items:center;gap:6px}
+  .mid-cta a:hover{color:var(--ink)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 28px;background:rgba(255,255,255,.02)}
+  .toc-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .toc ol{padding-left:20px;margin:0;font-size:14px;line-height:1.7}
+  .toc a{color:var(--ink-dim);text-decoration:none;border-bottom:0}
+  .toc a:hover{color:var(--cyan)}
+  .faq-block{margin-top:40px}
+  .faq-block h2{margin-bottom:18px}
+  .faq-q{font-size:16px;font-weight:600;color:var(--ink);margin:18px 0 6px}
+  .related{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+  .related h3{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .related ul{list-style:none;padding:0;margin:0}
+  .related li{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="../index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="../index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="../services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="../method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="../findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="../engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="../about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="../book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="../faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="../blog.html" aria-current="page"><span class="n">09</span><span lang="en">Blog</span><span lang="nl">Blog</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <article class="article">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../index.html"><span lang="en">Home</span><span lang="nl">Home</span></a> ·
+        <a href="../blog.html">Blog</a> ·
+        <span lang="en">Windows Server 2025 Hyper-V</span>
+        <span lang="nl">Windows Server 2025 Hyper-V</span>
+      </nav>
+
+      <!-- ============= ENGLISH ============= -->
+      <div lang="en">
+        <h1>Windows Server 2025 Hyper-V: What It Really Adds for Cluster Operators</h1>
+        <div class="meta">By Hans Vredevoort · 15 May 2026 · 13 minute read · Windows Server 2025</div>
+
+        <p class="lede">Windows Server 2025 has been generally available since November 2024, and in 2026 we see at CloudLabs that customers are seriously picking up upgrade planning. Not because Windows Server 2022 disappears tomorrow, but because 2025 brings a number of Hyper-V improvements that genuinely matter for cluster operators working with heterogeneous hardware, mixed-generation CPUs, and GPU workloads.</p>
+        <p class="lede">This article looks at the Hyper-V additions that actually matter for failover clusters, not the marketing list. What improves your operations? What is a good reason to bring the upgrade forward? And which pitfalls open up for existing clusters during the transition?</p>
+
+        <div class="toc">
+          <div class="toc-title">In this article</div>
+          <ol>
+            <li><a href="#en-1">The four Hyper-V changes that actually matter</a></li>
+            <li><a href="#en-2">Dynamic CPU compatibility for Live Migration</a></li>
+            <li><a href="#en-3">GPU-P for production workloads</a></li>
+            <li><a href="#en-4">vTPM 2.0 by default, and what that means for backup and DR</a></li>
+            <li><a href="#en-5">Hot-patching for Hyper-V hosts</a></li>
+            <li><a href="#en-6">The Windows Server 2012 R2 and 2016 guest pitfall</a></li>
+            <li><a href="#en-7">What has NOT drastically changed</a></li>
+            <li><a href="#en-8">Upgrade strategy for existing clusters</a></li>
+          </ol>
+        </div>
+
+        <h2 id="en-1">1. The four Hyper-V changes that actually matter</h2>
+        <p>Windows Server 2025 brings dozens of improvements. The four we treat as material in cluster Health Checks and pre-upgrade assessments:</p>
+        <ul>
+          <li><strong>Dynamic CPU compatibility for Live Migration.</strong> Live Migration between hosts with different CPU generations without VM shutdown or CPU compatibility mode.</li>
+          <li><strong>GPU-P (GPU Partitioning) for production.</strong> Splitting a physical GPU across multiple VMs, now mature enough for production workloads, no longer lab only.</li>
+          <li><strong>vTPM 2.0 by default.</strong> Trusted Platform Module for VMs ships by default, with implications for backup, replication, and DR.</li>
+          <li><strong>Hot-patching for Hyper-V hosts.</strong> Certain patches without reboot, limited scope but enough to noticeably shorten patch windows.</li>
+        </ul>
+        <p>Beyond these four, there are improvements to SDN, AKS on Hyper-V integration, and storage replica, but those are secondary for most customers until <a href="azure-local-migration-readiness.html">Azure Local</a> enters the conversation. We deliver a separate readiness assessment for that.</p>
+
+        <h2 id="en-2">2. Dynamic CPU compatibility for Live Migration</h2>
+        <p>This is the feature operators in existing heterogeneous clusters notice the most.</p>
+
+        <p><strong>The old problem:</strong></p>
+        <p>A cluster with nodes from different CPU generations (for example Intel Xeon Skylake and Ice Lake, or Sapphire Rapids and Emerald Rapids mixed) could only do Live Migration between those nodes with CPU compatibility mode enabled on the VM. That limited the CPU features the VM saw to what the oldest generation supported, and manual per-VM configuration was required. Live Migration between nodes with different AMD and Intel generations was outright impossible without VM shutdown.</p>
+        <p>In practice this meant after every hardware refresh, either the entire cluster had to be replaced at once, or part of the VMs stayed pinned to older nodes. Both options are expensive.</p>
+
+        <p><strong>What 2025 changes:</strong></p>
+        <p>Dynamic CPU compatibility adjusts the presented CPU feature set live during the migration, based on what the target host supports. At the source host the VM sees the full feature set, at the target host it sees the set both hosts support, and the transition happens without VM restart and without manual compatibility mode configuration.</p>
+
+        <p><strong>Practical impact:</strong></p>
+        <p>Hardware refreshes can happen rolling over months, without VM pinning. A cluster can run a mix of CPU generations without operational limits on Live Migration. That lowers the threshold to keep existing hardware running alongside new acquisitions, and makes CapEx planning more flexible.</p>
+
+        <p><strong>Verify on your cluster:</strong></p>
+<pre><code># Check whether the feature is active on the host
+Get-VMHost | Select-Object Name, EnhancedSessionMode,
+    SupportedVmVersions, HostNumaTopology
+
+# CPU compatibility mode per VM (legacy setting, no longer needed)
+Get-VM | Select-Object Name,
+    @{N='CompatMode';E={$_.GetCPUFeatureCompatibilityMode()}}</code></pre>
+
+        <p><strong>What remains a limit:</strong></p>
+        <p>Cross-vendor migration (Intel to AMD or vice versa) still does not work, not even with dynamic compatibility. For that scenario the solution remains VM shutdown or a quick migration with state save.</p>
+
+        <h2 id="en-3">3. GPU-P for production workloads</h2>
+        <p>GPU Partitioning was already available in 2022 but in lab state. In 2025 it is mature enough for production, and for customers with VDI workloads or AI-adjacent applications this is interesting.</p>
+
+        <p><strong>What GPU-P does:</strong></p>
+        <p>A physical GPU (NVIDIA T4, A10, A40, H100, or equivalent AMD/Intel) is split into multiple virtual GPUs. Each vGPU gets assigned to a VM and presents itself to the guest as a real GPU with its own vRAM and compute budget. Unlike DDA (Discrete Device Assignment) where one VM gets the whole GPU, GPU-P shares the GPU across multiple VMs.</p>
+
+        <p><strong>For which workloads:</strong></p>
+        <p>VDI with graphics acceleration, where users need a fraction of GPU capacity (CAD viewers, video editing, certain Office-accelerated rendering features). AI inference where multiple models run simultaneously without each needing a whole GPU. Remote desktop hosts for developers needing GPU acceleration for specific tools.</p>
+        <p>Not for: heavy AI training, where you want the full GPU and DDA remains the right choice. And not for scenarios where you need real hardware isolation between tenants for compliance reasons.</p>
+
+        <p><strong>Cluster implications:</strong></p>
+        <p>GPU-P currently does not work across Live Migration. A VM with a vGPU is pinned to the host with the physical GPU. Plan that into cluster design: GPU hosts are a dedicated subset, not mixed with general workloads, and you accept that GPU VMs need to come down for host maintenance.</p>
+
+        <p><strong>High-level configuration:</strong></p>
+<pre><code># Inventory GPUs suitable for GPU-P
+Get-VMHostPartitionableGpu
+
+# Create a GPU-P assignment to a VM
+Add-VMGpuPartitionAdapter -VMName 'VDI-Pool-01'
+Set-VMGpuPartitionAdapter -VMName 'VDI-Pool-01' `
+    -MinPartitionVRAM 2147483648 `
+    -MaxPartitionVRAM 8589934592 `
+    -OptimalPartitionVRAM 4294967296</code></pre>
+
+        <p>For customers seriously planning GPU-P use, we recommend a dedicated assessment. Which GPU models are supported, the driver versions on host and guest, and license terms (NVIDIA vGPU requires separate vGPU licenses) make it a topic worth its own attention.</p>
+
+        <h2 id="en-4">4. vTPM 2.0 by default, and what that means for backup and DR</h2>
+        <p>Virtual TPM 2.0 was opt-in in earlier versions. In 2025 it is default for Generation 2 VMs created on Windows Server 2025 hosts. That sounds harmless, but it has implications.</p>
+
+        <p><strong>What changes:</strong></p>
+        <p>New Gen 2 VMs are created with vTPM, and that vTPM contains keys unique per VM instance. For the VM itself this makes Secure Boot and BitLocker-style features available, which is good.</p>
+
+        <p><strong>Backup and DR implications:</strong></p>
+        <p>vTPM state must travel with the VM on restore. Most modern backup products handle this correctly, but older Veeam versions (pre-12.1) and some scripts leaning on <code>Export-VM</code> plus <code>Import-VM</code> can lose the vTPM state during restore. Result: the VM starts, but BitLocker is off, Secure Boot is broken, and anything depending on TPM-attested cryptography must be re-provisioned.</p>
+
+        <p><strong>Hyper-V Replica with vTPM:</strong></p>
+        <p>Works, provided both sides are on Windows Server 2025 and the host guardian service (HGS) configuration is consistent. For stretched clusters or cross-site replica this is an additional prerequisite to document in pre-migration assessments and DR runbooks.</p>
+
+        <p><strong>What we check during a Health Check:</strong></p>
+        <p>Which VMs have vTPM and which do not, whether the backup product correctly backs up and restores vTPM state, and whether host guardian service configuration is consistent across all nodes when shielded VMs are in scope.</p>
+
+<pre><code># Inventory vTPM state per VM
+Get-VM | Select-Object Name, Generation,
+    @{N='vTPM';E={(Get-VMSecurity -VMName $_.Name).TpmEnabled}},
+    @{N='SecureBoot';E={(Get-VMFirmware -VMName $_.Name).SecureBoot}}</code></pre>
+
+        <h2 id="en-5">5. Hot-patching for Hyper-V hosts</h2>
+        <p>Hot-patching has been available since Windows Server 2022 for specific scenarios, and in 2025 the scope is extended. It is still not for every patch, but enough to noticeably shorten patch windows.</p>
+
+        <p><strong>What it does:</strong></p>
+        <p>Certain patches are applied without reboot. The Cluster Service stays up, VMs keep running, and the patch is immediately active. For cumulative updates that are hot-patch eligible, this means a Cluster Aware Updating run that previously took four hours (a drain per node, a reboot per node, a rebalance afterwards) comes back to a fraction of that.</p>
+
+        <p><strong>What it does not do:</strong></p>
+        <p>Not every patch is hot-patchable. Kernel updates, some driver updates, and firmware-level patches still require a reboot. In practice we see roughly 60 to 70% of monthly CU content is hot-patchable, with the rest landing in quarterly reboot windows.</p>
+
+        <p><strong>Cluster impact:</strong></p>
+        <p>For customers running CAU, the runbook structure stays the same. Hot-patchable updates run through faster, non-hot-patchable updates still trigger a traditional drain-reboot-rejoin cycle. Main difference: monthly patch windows get shorter and less disruptive, with larger quarterly reboot windows for the rest.</p>
+
+        <p><strong>Prerequisite:</strong></p>
+        <p>Azure Arc enablement on the Hyper-V hosts. Hot-patching is tied to Azure Update Manager for coordination. For customers without Azure connectivity, hot-patching is not an option.</p>
+
+        <h2 id="en-6">6. The Windows Server 2012 R2 and 2016 guest pitfall</h2>
+        <p>This is the biggest practical problem we encounter with customers considering Windows Server 2025 Hyper-V.</p>
+
+        <p><strong>The problem:</strong></p>
+        <p>Windows Server 2012 R2 and 2016 guest VMs are not supported on Windows Server 2025 Hyper-V. In some cases they do not boot, in others they hit unexpected behaviour in integration services, in still others they appear to work but without Microsoft support.</p>
+        <p>The cause lies in ACPI table changes and modified VMBus device IDs in Hyper-V 2025. A 2012 R2 guest expects specific device identifiers that no longer exist, and falls back to an inaccessible boot device error.</p>
+
+        <p><strong>What makes it workable (temporarily):</strong></p>
+        <p>For customers who must keep 2012 R2 VMs running temporarily on a 2025 cluster, there is a manual registry trick to alias the old device IDs. Didier Van Hoye has written an excellent article explaining the offline registry edit procedure. It is a workaround, not a solution.</p>
+
+        <p><strong>The right fix:</strong></p>
+        <p>Plan the OS upgrade of legacy guests before or alongside the Hyper-V host upgrade. For customers <a href="vmware-to-hyper-v-migration-assessment.html">migrating from VMware to Hyper-V</a>, this means a significant share of VMs first needs a Windows Server version upgrade, not just a hypervisor migration. We model this as standard in pre-migration assessments and in upgrade planning.</p>
+
+        <p><strong>What does work:</strong></p>
+        <p>Windows Server 2019, 2022, and 2025 guest VMs run on Windows Server 2025 Hyper-V without issues. Modern Linux distributions with kernel 4.x or newer work as well. The pain sits specifically with 2012 R2 and (to a lesser degree) 2016 guests.</p>
+
+        <div class="mid-cta">
+          <p>Windows Server 2025 Hyper-V is not an upgrade you plan purely at the hypervisor layer. The host upgrade forces questions about guest OS lifecycles, GPU strategy, and backup tooling that would otherwise stay parked for years.</p>
+          <p>A CloudLabs upgrade readiness assessment maps these dependencies before the first node gets touched, and delivers a detailed upgrade plan per VM batch.</p>
+          <a href="../book.html">Schedule a Windows Server 2025 upgrade assessment →</a>
+        </div>
+
+        <h2 id="en-7">7. What has NOT drastically changed</h2>
+        <p>Equally important to know what stayed the same, because much marketing material claims 2025 is fundamentally different. For most cluster operators that is overstated.</p>
+        <ul>
+          <li><strong>Failover Clustering core.</strong> Quorum models, witness types, CSV mechanics, Cluster Aware Updating: nearly identical to 2022. Existing knowledge and runbooks remain valid.</li>
+          <li><strong>SET and networking.</strong> Switch Embedded Teaming, virtual switches, VLAN tagging, RDMA over RoCEv2 and iWARP: unchanged in mechanics. Network ATC remains the recommended automation layer, with several added validation features.</li>
+          <li><strong>Storage Spaces Direct.</strong> S2D is largely unchanged, with strategic emphasis shifted toward Azure Local for new hyperconverged deployments. S2D on Windows Server 2025 stays supported but receives less feature investment.</li>
+          <li><strong>PowerShell and management.</strong> The core cmdlets for Hyper-V and clustering are backwards compatible. Existing scripts keep working. Windows Admin Center remains the recommended GUI, now with a "Virtualization Mode" (vMode) preview for scale management of multiple clusters.</li>
+          <li><strong>System Center VMM.</strong> SCVMM 2025 supports Windows Server 2025 hosts. Existing VMM deployments can be updated, and the upgrade is less disruptive than earlier major-version jumps.</li>
+        </ul>
+
+        <h2 id="en-8">8. Upgrade strategy for existing clusters</h2>
+        <p>For customers with an existing Hyper-V cluster on Windows Server 2019 or 2022, we recommend the following order:</p>
+
+        <p><strong>Step 1, assessment.</strong> Inventory guest OS versions, identify 2012 R2 and 2016 VMs that need OS upgrade, verify backup product versions for vTPM support, and check GPU models against GPU-P compatibility lists.</p>
+
+        <p><strong>Step 2, guest OS upgrades.</strong> Address the 2012 R2 and 2016 VMs. Upgrade to 2019 or 2022 (not directly to 2025, because OS in-place upgrade skipping multiple versions rarely goes smoothly), or replace with new builds. This is usually the longest part of the trajectory.</p>
+
+        <p><strong>Step 3, backup stack update.</strong> Verify that Veeam, Commvault, or whichever product is in use is vTPM aware on the version used. Upgrade where needed before the host upgrade.</p>
+
+        <p><strong>Step 4, cluster rolling upgrade.</strong> Windows Server 2025 supports cluster rolling upgrade from both 2019 and 2022. One node at a time is upgraded, the cluster keeps running, and the Cluster Functional Level is explicitly raised at the end with <code>Update-ClusterFunctionalLevel</code>. Plan one or two nodes per maintenance window, depending on VM evacuation time.</p>
+
+        <p><strong>Step 5, post-upgrade validation.</strong> Full <code>Test-Cluster</code> run, validation of Live Migration paths, check that GPU-P (if in use) works correctly, and re-verification of <a href="hyper-v-time-drift-kerberos-csv.html">time service configuration</a>. That last one because we regularly see a major-version upgrade subtly affecting w32time configuration.</p>
+
+        <p><strong>Step 6, activate new features.</strong> Only when the cluster is stable on the new version, activate Dynamic CPU compatibility features on heterogeneous clusters, plan GPU-P deployment, and connect hosts to Azure Arc for hot-patching. All step by step, not all at once.</p>
+
+        <h2>The CloudLabs approach to Windows Server 2025 upgrade</h2>
+        <p>We treat a Windows Server 2025 upgrade for an existing Hyper-V cluster as a two-phase engagement. An assessment phase of three to five working days that maps all dependencies, delivers a go/no-go recommendation, and produces a phased upgrade plan. Then an execution phase that is either done by the customer team using our runbook, or by us in close coordination with the customer team.</p>
+        <p>For customers considering whether a Hyper-V upgrade still makes sense versus a jump to Azure Local, we deliver a comparative assessment weighing both options against cost, operational impact, and strategic fit.</p>
+        <p><a href="../book.html"><strong>Schedule a Windows Server 2025 Hyper-V assessment →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Frequently asked questions</h2>
+
+          <div class="faq-q">Do I really need to move to Windows Server 2025 if my cluster on 2022 runs fine?</div>
+          <p>Not necessarily. Windows Server 2022 remains supported until 2027, with another five years of Extended Support after. The question is whether the new features deliver enough value to bring an upgrade forward. For heterogeneous clusters with live migration issues, GPU workloads, or strict patch window requirements, yes. For stable, homogeneous clusters without those needs, 2025 can wait until natural hardware refresh.</p>
+
+          <div class="faq-q">Does cluster rolling upgrade work directly from 2019 to 2025?</div>
+          <p>Yes. Windows Server 2025 supports cluster rolling upgrade from both 2019 and 2022. The Cluster Functional Level stays on the old version during the upgrade until you explicitly raise it with <code>Update-ClusterFunctionalLevel</code>. Plan a rollback point by leaving this raise as the final step.</p>
+
+          <div class="faq-q">Does Dynamic CPU compatibility have a performance impact?</div>
+          <p>Negligible in practice. The feature set the VM sees is limited to what all nodes support, so VMs miss feature instructions they would see on a hardware-uniform cluster. For workloads aggressively using specific CPU instructions (some crypto libraries, AVX-512 in HPC workloads) that is a measurable difference. For general workloads the effect is below measurable threshold.</p>
+
+          <div class="faq-q">Can I use GPU-P and DDA mixed on the same cluster?</div>
+          <p>Yes, but not on the same GPU. A physical GPU is either in DDA mode assigned to one VM, or in partitioning mode split across multiple VMs. A host with multiple GPUs can do a mix, for example one H100 in DDA for AI training, two A10s in GPU-P for VDI.</p>
+
+          <div class="faq-q">What are the licensing terms for hot-patching?</div>
+          <p>Hot-patching on Windows Server 2025 requires an active Software Assurance contract or an Azure Arc connection with Azure Update Manager. For customers without SA or without Azure connectivity, hot-patching is not an option, and traditional reboot cycles continue to apply.</p>
+        </div>
+      </div>
+
+      <!-- ============= DUTCH ============= -->
+      <div lang="nl">
+        <h1>Windows Server 2025 Hyper-V: wat het werkelijk toevoegt voor cluster operators</h1>
+        <div class="meta">Door Hans Vredevoort · 15 mei 2026 · 13 minuten leestijd · Windows Server 2025</div>
+
+        <p class="lede">Windows Server 2025 is sinds november 2024 algemeen beschikbaar, en in 2026 zien wij bij CloudLabs steeds vaker dat klanten upgrade-planning serieus oppakken. Niet omdat Windows Server 2022 morgen ophoudt, maar omdat 2025 een aantal Hyper-V verbeteringen brengt die het verschil maken voor cluster-operators die met heterogene hardware, mixed-generation CPU's, en GPU-workloads werken.</p>
+        <p class="lede">Dit artikel kijkt naar de Hyper-V toevoegingen die er werkelijk toe doen voor failover clusters, niet de marketing-lijst. Wat verbetert je operatie? Wat is een goede reden om de upgrade voor te trekken? En welke valkuilen ontstaan er voor bestaande clusters bij de overstap?</p>
+
+        <div class="toc">
+          <div class="toc-title">In dit artikel</div>
+          <ol>
+            <li><a href="#nl-1">De vier Hyper-V veranderingen die er werkelijk toe doen</a></li>
+            <li><a href="#nl-2">Dynamic CPU compatibility voor Live Migration</a></li>
+            <li><a href="#nl-3">GPU-P voor productieworkloads</a></li>
+            <li><a href="#nl-4">vTPM 2.0 standaard, en wat dat betekent voor backup en DR</a></li>
+            <li><a href="#nl-5">Hot-patching voor Hyper-V hosts</a></li>
+            <li><a href="#nl-6">De Windows Server 2012 R2 en 2016 guest-valkuil</a></li>
+            <li><a href="#nl-7">Wat NIET drastisch is veranderd</a></li>
+            <li><a href="#nl-8">Upgrade-strategie voor bestaande clusters</a></li>
+          </ol>
+        </div>
+
+        <h2 id="nl-1">1. De vier Hyper-V veranderingen die er werkelijk toe doen</h2>
+        <p>Windows Server 2025 brengt tientallen verbeteringen. De vier die wij in cluster Health Checks en pre-upgrade assessments als materieel zien:</p>
+        <ul>
+          <li><strong>Dynamic CPU compatibility for Live Migration.</strong> Live Migration tussen hosts met verschillende CPU-generaties zonder VM-shutdown of CPU compatibility-mode.</li>
+          <li><strong>GPU-P (GPU Partitioning) voor productie.</strong> Verdeling van een fysieke GPU over meerdere VM's, nu volwassen genoeg voor productie-workloads, niet meer alleen lab.</li>
+          <li><strong>vTPM 2.0 standaard.</strong> Trusted Platform Module voor VM's wordt standaard meegerold, met implicaties voor backup, replicatie en DR.</li>
+          <li><strong>Hot-patching voor Hyper-V hosts.</strong> Bepaalde patches zonder reboot, beperkt scope maar genoeg om patch-windows merkbaar in te korten.</li>
+        </ul>
+        <p>Buiten deze vier zijn er verbeteringen aan SDN, AKS on Hyper-V integratie en storage replica, maar die zijn voor de meeste klanten secundair tot <a href="azure-local-migration-readiness.html">Azure Local</a> in beeld komt. Daar leveren we een aparte readiness-assessment voor.</p>
+
+        <h2 id="nl-2">2. Dynamic CPU compatibility voor Live Migration</h2>
+        <p>Dit is de feature waarvan operators in bestaande heterogene clusters het meeste merken.</p>
+
+        <p><strong>Het oude probleem:</strong></p>
+        <p>Een cluster met nodes van verschillende CPU-generaties (bijvoorbeeld Intel Xeon Skylake en Ice Lake, of Sapphire Rapids en Emerald Rapids gemixed) kon alleen Live Migration tussen die nodes doen met CPU compatibility-mode aangezet op de VM. Dat beperkte de CPU-features die de VM zag tot wat de oudste generatie ondersteunde, en handmatige aanpassing per VM was vereist. Live Migration tussen nodes met verschillende AMD- en Intel-generaties was sowieso niet mogelijk zonder VM-shutdown.</p>
+        <p>In de praktijk betekende dit dat na elke hardware-refresh ofwel het hele cluster vervangen moest worden ineens, of dat een deel van de VM's vast zat aan oudere nodes. Beide opties zijn duur.</p>
+
+        <p><strong>Wat 2025 verandert:</strong></p>
+        <p>Dynamic CPU compatibility past de gepresenteerde CPU-feature set live aan tijdens de migratie, op basis van wat de doel-host ondersteunt. De VM ziet bij de bron-host de volledige feature set, bij de doel-host de set die beide ondersteunen, en de overgang gebeurt zonder VM-restart en zonder dat handmatige compatibility-mode-configuratie nodig is.</p>
+
+        <p><strong>Praktische impact:</strong></p>
+        <p>Hardware-refreshes kunnen rolling gebeuren over maanden, zonder VM-pinning. Een cluster kan een mengeling van CPU-generaties draaien zonder operationele beperkingen op Live Migration. Dat verlaagt de drempel om bestaande hardware door te laten draaien naast nieuwe aanwinsten, en maakt CapEx-planning flexibeler.</p>
+
+        <p><strong>Verifieer op je cluster:</strong></p>
+<pre><code># Controleer of de feature actief is op de host
+Get-VMHost | Select-Object Name, EnhancedSessionMode,
+    SupportedVmVersions, HostNumaTopology
+
+# CPU compatibility mode per VM (legacy setting, niet meer nodig)
+Get-VM | Select-Object Name,
+    @{N='CompatMode';E={$_.GetCPUFeatureCompatibilityMode()}}</code></pre>
+
+        <p><strong>Wat blijft beperking:</strong></p>
+        <p>Cross-vendor migration (Intel naar AMD of omgekeerd) werkt nog steeds niet, ook niet met dynamic compatibility. Voor dat scenario blijft de oplossing een VM-shutdown of een quick migration met state-save.</p>
+
+        <h2 id="nl-3">3. GPU-P voor productieworkloads</h2>
+        <p>GPU Partitioning was in 2022 al beschikbaar maar in lab-staat. In 2025 is het volwassen genoeg voor productie, en voor klanten met VDI-workloads of AI-gevoelige applicaties is dit interessant.</p>
+
+        <p><strong>Wat GPU-P doet:</strong></p>
+        <p>Een fysieke GPU (NVIDIA T4, A10, A40, H100, of equivalente AMD/Intel) wordt opgesplitst in meerdere virtuele GPU's. Elke vGPU wordt aan een VM toegewezen en presenteert zich aan de guest als een echte GPU met eigen vRAM en compute-budget. Anders dan DDA (Discrete Device Assignment) waar één VM de hele GPU krijgt, deelt GPU-P de GPU over meerdere VM's.</p>
+
+        <p><strong>Voor welke workloads:</strong></p>
+        <p>VDI met grafische versnelling, waar gebruikers een fractie van GPU-capaciteit nodig hebben (CAD-viewers, video-editing, sommige Office-versnelde rendering-features). AI-inferentie waarbij meerdere modellen tegelijk draaien zonder elk een hele GPU op te eisen. Remote desktop hosts voor ontwikkelaars die GPU-acceleratie nodig hebben voor specifieke tools.</p>
+        <p>Niet voor: zware AI-training, waar je de volle GPU wilt en DDA de juiste keuze blijft. En niet voor scenarios waar je echte hardware-isolatie tussen tenants nodig hebt om compliance-redenen.</p>
+
+        <p><strong>Cluster-implicaties:</strong></p>
+        <p>GPU-P werkt momenteel niet over Live Migration heen. Een VM met een vGPU is gepind aan de host die de fysieke GPU heeft. Plan dat in cluster-ontwerp: GPU-hosts zijn een dedicated subset, geen mix met algemene workloads, en je accepteert dat GPU-VM's down moeten voor host-onderhoud.</p>
+
+        <p><strong>Configuratie hoog niveau:</strong></p>
+<pre><code># Inventariseer GPU's geschikt voor GPU-P
+Get-VMHostPartitionableGpu
+
+# Maak een GPU-P toewijzing aan een VM
+Add-VMGpuPartitionAdapter -VMName 'VDI-Pool-01'
+Set-VMGpuPartitionAdapter -VMName 'VDI-Pool-01' `
+    -MinPartitionVRAM 2147483648 `
+    -MaxPartitionVRAM 8589934592 `
+    -OptimalPartitionVRAM 4294967296</code></pre>
+
+        <p>Voor klanten die GPU-P serieus willen inzetten, raden wij een dedicated assessment aan. De GPU-modellen die ondersteund worden, de driver-versies aan host en guest, en de licentievoorwaarden (NVIDIA vGPU vereist apart vGPU-licenties) maken het een onderwerp dat eigen aandacht verdient.</p>
+
+        <h2 id="nl-4">4. vTPM 2.0 standaard, en wat dat betekent voor backup en DR</h2>
+        <p>Virtual TPM 2.0 was in eerdere versies opt-in. In 2025 is het standaard voor Generation 2 VM's die op Windows Server 2025 hosts worden aangemaakt. Dat klinkt onschuldig, maar het heeft implicaties.</p>
+
+        <p><strong>Wat verandert:</strong></p>
+        <p>Nieuwe Gen 2 VM's worden met vTPM aangemaakt, en die vTPM bevat keys die uniek zijn per VM-instantie. Voor de VM zelf maakt dit Secure Boot en BitLocker-achtige features beschikbaar, wat goed is.</p>
+
+        <p><strong>Backup en DR implicaties:</strong></p>
+        <p>Een vTPM-state moet bij een VM-restore mee. De meeste moderne backup-producten doen dit correct, maar oudere Veeam-versies (vóór 12.1) en sommige scripts die op <code>Export-VM</code> plus <code>Import-VM</code> leunen, kunnen de vTPM-state verliezen tijdens een restore. Resultaat: de VM start, maar BitLocker is uit, Secure Boot is verbroken, en alles wat van TPM-attested cryptografie afhankelijk is moet opnieuw geprovisioneerd worden.</p>
+
+        <p><strong>Hyper-V Replica met vTPM:</strong></p>
+        <p>Werkt, mits beide kanten op Windows Server 2025 staan en de host guardian service-configuratie (HGS) consistent is. Voor stretched clusters of cross-site replica is dit een extra prerequisite die je in pre-migration assessments en in DR-runbooks moet documenteren.</p>
+
+        <p><strong>Wat we tijdens een Health Check controleren:</strong></p>
+        <p>Welke VM's hebben vTPM en welke niet, of het backup-product de vTPM-state correct backupt en restored, en of de host guardian service-configuratie consistent is over alle nodes als shielded VMs in scope zijn.</p>
+
+<pre><code># Inventariseer vTPM-status per VM
+Get-VM | Select-Object Name, Generation,
+    @{N='vTPM';E={(Get-VMSecurity -VMName $_.Name).TpmEnabled}},
+    @{N='SecureBoot';E={(Get-VMFirmware -VMName $_.Name).SecureBoot}}</code></pre>
+
+        <h2 id="nl-5">5. Hot-patching voor Hyper-V hosts</h2>
+        <p>Hot-patching is sinds Windows Server 2022 beschikbaar voor specifieke scenarios, en in 2025 is de scope uitgebreid. Het is nog steeds niet voor alle patches, maar wel voor genoeg om patch-windows merkbaar in te korten.</p>
+
+        <p><strong>Wat het doet:</strong></p>
+        <p>Bepaalde patches worden toegepast zonder reboot. De Cluster Service blijft draaien, VM's blijven draaien, en de patch is direct actief. Voor cumulative updates die hot-patch geschikt zijn, betekent dit dat een Cluster Aware Updating-run die voorheen vier uur kostte (een drain per node, een reboot per node, een rebalance achteraf) terugkomt op een fractie daarvan.</p>
+
+        <p><strong>Wat het niet doet:</strong></p>
+        <p>Niet alle patches zijn hot-patchable. Kernel-updates, sommige driver-updates en firmware-niveau patches vereisen nog steeds een reboot. In de praktijk zien wij dat ongeveer 60 tot 70% van de maandelijkse CU-content hot-patchable is, met de rest in kwartaalse reboot-windows.</p>
+
+        <p><strong>Cluster-impact:</strong></p>
+        <p>Voor klanten die CAU draaien, blijft de runbook-structuur hetzelfde. Hot-patchable updates lopen sneller door, niet-hot-patchable updates triggeren nog steeds een traditionele drain-reboot-rejoin cyclus. Belangrijkste verschil: maandelijkse patch-vensters worden korter en minder disruptief, met grotere kwartaalse reboot-vensters voor de rest.</p>
+
+        <p><strong>Pre-requisite:</strong></p>
+        <p>Azure Arc-enablement op de Hyper-V hosts. Hot-patching is gekoppeld aan Azure Update Manager voor coördinatie. Voor klanten zonder Azure-connectivity is hot-patching geen optie.</p>
+
+        <h2 id="nl-6">6. De Windows Server 2012 R2 en 2016 guest-valkuil</h2>
+        <p>Dit is het belangrijkste praktische probleem dat we tegenkomen bij klanten die overwegen naar Windows Server 2025 Hyper-V te gaan.</p>
+
+        <p><strong>Het probleem:</strong></p>
+        <p>Windows Server 2012 R2 en 2016 guest-VM's worden niet ondersteund op Windows Server 2025 Hyper-V. In sommige gevallen booten ze niet, in andere gevallen lopen ze tegen onverwacht gedrag aan in integration services, in nog andere gevallen lijken ze te werken maar zonder Microsoft-support.</p>
+        <p>De oorzaak ligt in ACPI table-veranderingen en aangepaste VMBus device IDs in Hyper-V 2025. Een 2012 R2 guest verwacht specifieke device-identifiers die er niet meer zijn, en valt terug op een inaccessible boot device-fout.</p>
+
+        <p><strong>Wat het werkbaar maakt (tijdelijk):</strong></p>
+        <p>Voor klanten die 2012 R2-VM's tijdelijk moeten blijven draaien op een 2025 cluster, bestaat er een handmatige registry-truc om de oude device-IDs te aliasen. Didier Van Hoye heeft hierover een uitstekend artikel geschreven dat de offline registry-edit procedure uitlegt. Het is een workaround, geen oplossing.</p>
+
+        <p><strong>De juiste oplossing:</strong></p>
+        <p>Plan de OS-upgrade van legacy guests vóór of gelijktijdig met de Hyper-V host-upgrade. Voor klanten die <a href="vmware-to-hyper-v-migration-assessment.html">VMware naar Hyper-V migreren</a>, betekent dit dat een aanzienlijk deel van de VM's eerst een Windows Server-versie upgrade nodig heeft, niet alleen een hypervisor-migratie. Wij modelleren dit standaard in pre-migration assessments en in upgrade-planning.</p>
+
+        <p><strong>Wat wel werkt:</strong></p>
+        <p>Windows Server 2019, 2022 en 2025 guest-VM's draaien zonder issues op Windows Server 2025 Hyper-V. Moderne Linux-distributies met kernel 4.x of nieuwer werken eveneens. De pijn zit specifiek bij 2012 R2 en (in mindere mate) 2016 guests.</p>
+
+        <div class="mid-cta">
+          <p>Windows Server 2025 Hyper-V is geen upgrade die je puur op de hypervisor-laag plant. De host-upgrade dwingt vragen over guest-OS levenscycli, GPU-strategie, en backup-tooling die anders nog jaren zouden blijven liggen.</p>
+          <p>Een CloudLabs upgrade readiness assessment brengt deze afhankelijkheden in kaart vóór de eerste node wordt aangeraakt, en levert een gedetailleerd upgrade-plan per VM-batch.</p>
+          <a href="../book.html">Plan een Windows Server 2025 upgrade assessment →</a>
+        </div>
+
+        <h2 id="nl-7">7. Wat NIET drastisch is veranderd</h2>
+        <p>Het is even belangrijk om te weten wat hetzelfde is gebleven, omdat veel marketing-materiaal claimt dat 2025 fundamenteel anders is. Voor de meeste cluster-operators is dat overdreven.</p>
+        <ul>
+          <li><strong>Failover Clustering kern.</strong> Quorum-modellen, witness-types, CSV-mechanica, Cluster Aware Updating: vrijwel identiek aan 2022. Bestaande kennis en runbooks blijven van toepassing.</li>
+          <li><strong>SET en netwerken.</strong> Switch Embedded Teaming, virtuele switches, VLAN-tagging, RDMA over RoCEv2 en iWARP: ongewijzigd in mechaniek. Network ATC blijft de aanbevolen automatiseringslaag, met enkele toegevoegde validatie-features.</li>
+          <li><strong>Storage Spaces Direct.</strong> S2D is grotendeels onveranderd, met de strategische nadruk verschoven naar Azure Local voor nieuwe hyperconverged deployments. S2D op Windows Server 2025 blijft ondersteund maar krijgt minder feature-investering.</li>
+          <li><strong>PowerShell en management.</strong> De kern-cmdlets voor Hyper-V en clustering zijn backwards compatible. Bestaande scripts blijven werken. Windows Admin Center is de aanbevolen GUI, met inmiddels ook een "Virtualization Mode" (vMode) preview voor schaal-management van meerdere clusters.</li>
+          <li><strong>System Center VMM.</strong> SCVMM 2025 ondersteunt Windows Server 2025 hosts. Bestaande VMM-deployments kunnen geüpdatet worden, en de upgrade is minder disruptief dan eerdere major-versie sprongen.</li>
+        </ul>
+
+        <h2 id="nl-8">8. Upgrade-strategie voor bestaande clusters</h2>
+        <p>Voor klanten met een bestaand Hyper-V cluster op Windows Server 2019 of 2022, raden wij de volgende volgorde:</p>
+
+        <p><strong>Stap 1, assessment.</strong> Inventariseer guest-OS versies, identificeer 2012 R2 en 2016 VM's die OS-upgrade nodig hebben, controleer backup-product-versies op vTPM-support, en check GPU-modellen tegen GPU-P compatibility-lijsten.</p>
+
+        <p><strong>Stap 2, guest OS-upgrades.</strong> Pak de 2012 R2 en 2016 VM's aan. Upgrade naar 2019 of 2022 (niet direct naar 2025, want OS in-place upgrade overslaat meerdere versies wordt zelden gladjes), of vervang met nieuwe builds. Dit is meestal het langste deel van het traject.</p>
+
+        <p><strong>Stap 3, backup-stack update.</strong> Verifieer dat Veeam, Commvault of welk product ook in gebruik is, vTPM-aware is op de gebruikte versie. Upgrade waar nodig vóór de host-upgrade.</p>
+
+        <p><strong>Stap 4, cluster rolling upgrade.</strong> Windows Server 2025 ondersteunt cluster rolling upgrade vanuit 2019 en 2022. Een node tegelijk wordt geüpgraded, de cluster blijft draaien, en de Cluster Functional Level wordt aan het eind expliciet verhoogd met <code>Update-ClusterFunctionalLevel</code>. Reken op één tot twee nodes per onderhoudsvenster, afhankelijk van VM-evacuatietijd.</p>
+
+        <p><strong>Stap 5, post-upgrade validatie.</strong> Volledige <code>Test-Cluster</code> run, validatie van Live Migration-paden, controle of GPU-P (indien in gebruik) correct werkt, en hercontrole van <a href="hyper-v-time-drift-kerberos-csv.html">time service-configuratie</a>. Dat laatste, omdat wij regelmatig zien dat een major-version upgrade de w32time-configuratie op subtiele manieren beïnvloedt.</p>
+
+        <p><strong>Stap 6, activeer nieuwe features.</strong> Pas wanneer het cluster stabiel is op de nieuwe versie, activeer je Dynamic CPU compatibility-features op heterogene clusters, plan je GPU-P deployment, en koppel je hosts aan Azure Arc voor hot-patching. Allemaal stap-voor-stap, niet allemaal tegelijk.</p>
+
+        <h2>De CloudLabs aanpak voor Windows Server 2025 upgrade</h2>
+        <p>Wij behandelen een Windows Server 2025 upgrade voor een bestaand Hyper-V cluster als een opdracht in twee fasen. Een assessment-fase van drie tot vijf werkdagen die alle afhankelijkheden in kaart brengt, een go/no-go-advies geeft en een gefaseerd upgrade-plan oplevert. Daarna een uitvoering-fase die ofwel door het klantteam wordt gedaan met onze runbook, ofwel door ons gedaan in nauwe samenwerking met het klantteam.</p>
+        <p>Voor klanten die overwegen of een Hyper-V upgrade nog wel logisch is versus een sprong naar Azure Local, leveren wij een vergelijkende assessment die beide opties tegen elkaar afzet op kosten, operationele impact, en strategische fit.</p>
+        <p><a href="../book.html"><strong>Plan een Windows Server 2025 Hyper-V assessment →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Veelgestelde vragen</h2>
+
+          <div class="faq-q">Moet ik per se naar Windows Server 2025 als mijn cluster op 2022 prima draait?</div>
+          <p>Niet per se. Windows Server 2022 wordt nog ondersteund tot 2027, en daarna nog vijf jaar Extended Support. De vraag is of de nieuwe features genoeg waarde leveren om een upgrade voor te trekken. Voor heterogene clusters met live migration-issues, GPU-workloads of strikte patch-window-eisen wel. Voor stabiele, homogene clusters zonder die behoeften kan 2025 wachten tot natuurlijke hardware-refresh.</p>
+
+          <div class="faq-q">Werkt cluster rolling upgrade van 2019 direct naar 2025?</div>
+          <p>Ja. Windows Server 2025 ondersteunt cluster rolling upgrade vanuit zowel 2019 als 2022. De Cluster Functional Level blijft tijdens de upgrade op de oude versie tot je hem expliciet verhoogt met <code>Update-ClusterFunctionalLevel</code>. Plan een terugrolpunt door deze verhoging als laatste stap te doen.</p>
+
+          <div class="faq-q">Heeft Dynamic CPU compatibility een performance-impact?</div>
+          <p>Verwaarloosbaar in praktijk. De feature-set die de VM ziet wordt beperkt tot wat alle nodes ondersteunen, dus VM's missen feature-instructions die ze op een hardware-uniform cluster wel zouden zien. Voor workloads die agressief specifieke CPU-instructies gebruiken (sommige crypto-libraries, AVX-512 in HPC-workloads) is dat een meetbaar verschil. Voor algemene workloads is het effect onder de meetbare drempel.</p>
+
+          <div class="faq-q">Kan ik GPU-P en DDA gemixt op hetzelfde cluster gebruiken?</div>
+          <p>Ja, maar niet op dezelfde GPU. Een fysieke GPU is óf in DDA-modus toegewezen aan één VM, óf in partitioning-modus opgesplitst over meerdere VM's. Een host met meerdere GPU's kan een mix doen, bijvoorbeeld één H100 in DDA voor AI-training, twee A10's in GPU-P voor VDI.</p>
+
+          <div class="faq-q">Wat zijn de licentievoorwaarden voor hot-patching?</div>
+          <p>Hot-patching op Windows Server 2025 vereist een actief Software Assurance-contract of een Azure Arc-koppeling met Azure Update Manager. Voor klanten zonder SA of zonder Azure-connectivity is hot-patching geen optie, en blijven traditionele reboot-cycli van toepassing.</p>
+        </div>
+      </div>
+
+      <div class="related">
+        <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
+        <ul>
+          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
+          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
+          <li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>
+          <li><a href="hyper-v-time-drift-kerberos-csv.html"><span lang="en">Time drift in Hyper-V clusters</span><span lang="nl">Time drift in Hyper-V clusters</span></a></li>
+          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
+    <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.3.3</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+</body>
+</html>

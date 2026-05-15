@@ -1,0 +1,617 @@
+<!doctype html>
+<!-- CloudLabs · v0.3.3 · Blog · Live Migration Wrong Network -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="../favicon.png" type="image/png">
+<title>Live Migration on the Wrong Network: The Silent Hyper-V Pitfall · CloudLabs</title>
+<meta name="description" content="Why Hyper-V Live Migration quietly uses the wrong network, the three configuration layers involved, and the PowerShell to verify the actual path and lock it down — by CloudLabs.">
+<link rel="canonical" href="https://cldlbs.com/blog/live-migration-wrong-network.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/live-migration-wrong-network.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/live-migration-wrong-network.html">
+<link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/live-migration-wrong-network.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cldlbs.com/blog/live-migration-wrong-network.html">
+<meta property="og:title" content="Live Migration on the Wrong Network: The Silent Hyper-V Pitfall">
+<meta property="og:description" content="Why Hyper-V Live Migration quietly uses the wrong network — and how to fix it for good.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<meta property="article:published_time" content="2026-05-15">
+<meta property="article:author" content="Hans Vredevoort">
+<meta property="article:section" content="Networking">
+<meta property="article:tag" content="Live Migration">
+<meta property="article:tag" content="Hyper-V">
+<meta property="article:tag" content="Cluster Network">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BlogPosting",
+  "headline":"Live Migration on the Wrong Network: The Silent Hyper-V Pitfall",
+  "description":"Why Hyper-V Live Migration quietly uses the wrong network, the three configuration layers involved, and the PowerShell to verify the actual path and lock it down.",
+  "image":"https://cldlbs.com/images/cluster.jpg",
+  "datePublished":"2026-05-15",
+  "dateModified":"2026-05-15",
+  "author":{"@type":"Person","name":"Hans Vredevoort","url":"https://cldlbs.com/about.html","jobTitle":"Hyper-V & Cluster Consultant","worksFor":{"@type":"Organization","name":"CloudLabs"}},
+  "publisher":{"@type":"Organization","name":"CloudLabs","url":"https://cldlbs.com/","logo":{"@type":"ImageObject","url":"https://cldlbs.com/favicon.png"}},
+  "mainEntityOfPage":{"@type":"WebPage","@id":"https://cldlbs.com/blog/live-migration-wrong-network.html"},
+  "articleSection":"Networking",
+  "keywords":"Live Migration, Hyper-V, Failover Cluster, Cluster Network, SMB, RDMA, Compression, VMMigrationNetwork"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://cldlbs.com/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://cldlbs.com/blog.html"},
+    {"@type":"ListItem","position":3,"name":"Live Migration on the Wrong Network","item":"https://cldlbs.com/blog/live-migration-wrong-network.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"Why does Hyper-V not log a warning when Live Migration uses the wrong network?",
+      "acceptedAnswer":{"@type":"Answer","text":"Because from the cluster's perspective there is no fallback to see. The host had no VMMigrationNetwork entry for the intended subnet, so vmms picked an interface that worked. From the Cluster Service's view that is a successful migration. It is a design limitation, not a bug, and the only defence is verification of the actual path."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does SMB mode always perform better than Compression?",
+      "acceptedAnswer":{"@type":"Answer","text":"On a cluster with multiple NICs or RDMA-capable hardware, yes. On a single-NIC cluster without RDMA, Compression can occasionally be slightly faster because it leans harder on CPU. In production we have not seen a scenario in the last three years where Compression was the right choice; SMB is the modern default."}
+    },
+    {
+      "@type":"Question",
+      "name":"What is the difference between MigrationNetworkOrder at cluster level and VMMigrationNetwork per host?",
+      "acceptedAnswer":{"@type":"Answer","text":"The cluster level influences which networks the cluster prefers when it coordinates a Live Migration. The per-host list is what vmms actually uses to bind a source IP. Both must be consistent. When they disagree, the per-host list wins in practice, because that is what actually establishes the TCP connection."}
+    },
+    {
+      "@type":"Question",
+      "name":"What is a reasonable MaximumVirtualMachineMigrations value?",
+      "acceptedAnswer":{"@type":"Answer","text":"On 25 GbE with SMB and RDMA, 4 to 8 parallel migrations is common. On 10 GbE without RDMA, 2 to 4. Test it during a maintenance window with your actual VM mix, because VMs with heavy active memory can bottleneck each other even on fast networks."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does this affect Storage Live Migration too?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes, partially. Storage Live Migration uses SMB and shares the MaximumStorageMigrations setting. Network selection happens through SMB Multichannel, so the priority lives in SMB configuration rather than Live Migration-specific settings. The core principle still holds: know which path the traffic is actually taking."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .article{max-width:75ch;margin-top:8px}
+  .article .breadcrumb{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:18px}
+  .article .breadcrumb a{color:var(--ink-dim);text-decoration:none}
+  .article .breadcrumb a:hover{color:var(--cyan)}
+  .article h1{font-size:clamp(24px,4.4vw,36px);font-weight:600;line-height:1.2;margin:0 0 14px}
+  .article .meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:28px}
+  .article .lede{font-size:17px;line-height:1.6;color:var(--ink-dim);margin-bottom:18px}
+  .article h2{font-size:21px;font-weight:600;line-height:1.3;margin:40px 0 14px;color:var(--ink)}
+  .article h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+  .article p{font-size:15px;line-height:1.7;color:var(--ink-dim);margin:0 0 14px}
+  .article ul,.article ol{font-size:15px;line-height:1.7;color:var(--ink-dim);padding-left:22px;margin:0 0 14px}
+  .article li{margin-bottom:6px}
+  .article a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .article strong{color:var(--ink)}
+  .article code{font-family:var(--mono);font-size:13px;background:rgba(95,227,255,.08);color:var(--cyan);padding:1px 6px;border-radius:4px}
+  .article pre{background:rgba(15,24,50,.7);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink);margin:0 0 18px;line-height:1.55}
+  .article pre code{background:none;color:inherit;padding:0}
+  .article blockquote{border-left:2px solid var(--cyan);padding:6px 18px;margin:18px 0;color:var(--ink);font-style:italic;background:rgba(95,227,255,.04)}
+  .callout{border:1px solid var(--line-strong);border-radius:10px;padding:14px 18px;margin:18px 0;background:rgba(95,227,255,.04)}
+  .callout strong{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .mid-cta{border:1px solid var(--cyan);border-radius:12px;padding:22px 24px;margin:32px 0;background:linear-gradient(135deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .mid-cta p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 12px}
+  .mid-cta a{color:var(--cyan);font-weight:600;font-size:15px;text-decoration:none;border-bottom:0;display:inline-flex;align-items:center;gap:6px}
+  .mid-cta a:hover{color:var(--ink)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 28px;background:rgba(255,255,255,.02)}
+  .toc-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .toc ol{padding-left:20px;margin:0;font-size:14px;line-height:1.7}
+  .toc a{color:var(--ink-dim);text-decoration:none;border-bottom:0}
+  .toc a:hover{color:var(--cyan)}
+  .faq-block{margin-top:40px}
+  .faq-block h2{margin-bottom:18px}
+  .faq-q{font-size:16px;font-weight:600;color:var(--ink);margin:18px 0 6px}
+  .related{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+  .related h3{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .related ul{list-style:none;padding:0;margin:0}
+  .related li{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="../index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="../index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="../services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="../method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="../findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="../engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="../about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="../book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="../faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="../blog.html" aria-current="page"><span class="n">09</span><span lang="en">Blog</span><span lang="nl">Blog</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <article class="article">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../index.html"><span lang="en">Home</span><span lang="nl">Home</span></a> ·
+        <a href="../blog.html">Blog</a> ·
+        <span lang="en">Live Migration on the Wrong Network</span>
+        <span lang="nl">Live Migration over het verkeerde netwerk</span>
+      </nav>
+
+      <!-- ============= ENGLISH ============= -->
+      <div lang="en">
+        <h1>Live Migration on the Wrong Network: The Silent Hyper-V Pitfall</h1>
+        <div class="meta">By Hans Vredevoort · 15 May 2026 · 12 minute read · Networking</div>
+
+        <p class="lede">Live Migration quietly using the wrong network is the single most common finding in CloudLabs Hyper-V Cluster Health Checks. It is the kind of misconfiguration that does not fail, it just runs slow, competes with cluster heartbeats during patch windows, and produces incidents that look like switch problems when they are really mis-routed VM memory transfers.</p>
+        <p class="lede">This article walks through the three configuration layers, the PowerShell to verify the actual path being used, and the remediation we apply on every engagement.</p>
+
+        <div class="toc">
+          <div class="toc-title">In this article</div>
+          <ol>
+            <li><a href="#en-1">The three configuration layers</a></li>
+            <li><a href="#en-2">What "wrong network" actually looks like</a></li>
+            <li><a href="#en-3">Verifying the path in use</a></li>
+            <li><a href="#en-4">The fix, explicit and validated configuration</a></li>
+            <li><a href="#en-5">Performance options: TCP, Compression, SMB, RDMA</a></li>
+            <li><a href="#en-6">End-to-end validation</a></li>
+            <li><a href="#en-7">Preventing regression</a></li>
+          </ol>
+        </div>
+
+        <h2 id="en-1">1. The three configuration layers</h2>
+        <p>Network selection for Live Migration runs across three independent configuration layers. We regularly find clusters where two are correct and the third silently breaks the whole thing.</p>
+        <p><strong>Cluster network role.</strong> Each cluster network (subnet) has a <code>Role</code>: <code>None</code>, <code>Cluster</code>, or <code>ClusterAndClient</code>. The cluster only considers networks with role <code>Cluster</code> or <code>ClusterAndClient</code> for internal traffic, including Live Migration.</p>
+        <p><strong>Cluster Live Migration priority.</strong> Inside the cluster object sits an ordered list of networks the cluster prefers for Live Migration. Set it through <code>Set-ClusterParameter</code> or through the GUI under <em>Networks → Live Migration Settings</em>.</p>
+        <p><strong>Per-host VM Migration network list.</strong> Each Hyper-V host has its own <code>VMMigrationNetwork</code> list. That is what <code>vmms</code> actually uses to bind to a source IP when starting a migration. If the cluster says "use 10.10.20.0/24" but the host has no <code>VMMigrationNetwork</code> entry for that subnet, the host falls back to whichever interface responds, usually the management network.</p>
+
+        <div class="callout"><strong>Why this stays quiet</strong>
+        The cluster logs no warning when fallback occurs. No event. The migration completes successfully, just over the wrong NIC. The only way to know is to verify the actual TCP connection during the migration, or watch per-NIC byte counters during a test.</div>
+
+        <h2 id="en-2">2. What "wrong network" actually looks like</h2>
+        <p>The classic symptoms in production:</p>
+        <ul>
+          <li><strong>Migrations take 4 to 6 minutes where 30 to 45 seconds should be achievable.</strong> Usually because LM is going over a 1 GbE management network instead of the 25 GbE storage network.</li>
+          <li><strong>Cluster heartbeat drops during CAU runs.</strong> If LM and heartbeat share a NIC, big memory transfers can saturate the link and mark heartbeats as missing.</li>
+          <li><strong>Switch port utilisation on the management VLAN peaks at 90% plus during patching.</strong> Network ops notices and opens a ticket. The Hyper-V team makes no connection to LM.</li>
+          <li><strong>SMB Multichannel sessions in unexpected places.</strong> If LM is on SMB (default since WS2016) but has no clean RDMA path, it falls back to plain TCP-over-SMB on whatever interface is reachable.</li>
+        </ul>
+
+        <p>The cluster is healthy in all these scenarios by standard monitoring criteria. <code>Test-Cluster</code> passes. Failover Cluster Manager is green. The only correlation is timing. That is precisely why this is a typical Hyper-V Cluster Health Check finding, not something reactive monitoring catches. See <a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</a> for the wider pattern.</p>
+
+        <h2 id="en-3">3. Verifying the path in use</h2>
+        <p>Verification requires a live test. Inspecting configuration alone is not enough because the three layers interact in non-obvious ways. The procedure CloudLabs uses during a Health Check:</p>
+
+        <p><strong>Step 1, snapshot all three configuration layers:</strong></p>
+<pre><code># Cluster networks and their roles
+Get-ClusterNetwork |
+    Select-Object Name, Address, Role, AutoMetric, Metric |
+    Sort-Object Metric
+
+# Cluster Live Migration priority
+$lmNetworks = (Get-ClusterResourceType -Name 'Virtual Machine' |
+    Get-ClusterParameter -Name MigrationNetworkOrder).Value
+$lmExcluded = (Get-ClusterResourceType -Name 'Virtual Machine' |
+    Get-ClusterParameter -Name MigrationExcludeNetworks).Value
+Write-Host "LM order:    $lmNetworks"
+Write-Host "LM excluded: $lmExcluded"
+
+# Per-host VM migration network configuration
+Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    [PSCustomObject]@{
+        Node     = $env:COMPUTERNAME
+        Enabled  = (Get-VMHost).VirtualMachineMigrationEnabled
+        AuthType = (Get-VMHost).VirtualMachineMigrationAuthenticationType
+        PerfMode = (Get-VMHost).VirtualMachineMigrationPerformanceOption
+        Networks = (Get-VMMigrationNetwork | Select-Object -Expand Subnet) -join ', '
+    }
+}</code></pre>
+
+        <p><strong>Step 2, start an actual Live Migration of a VM with at least 8 GB of active memory:</strong></p>
+<pre><code>Move-ClusterVirtualMachineRole -Name 'TEST-LM-VM' -Node HV02</code></pre>
+
+        <p><strong>Step 3, on the source host during the migration, capture the active TCP connections of the VMMS process:</strong></p>
+<pre><code>$vmms = Get-Process vmms | Select-Object -First 1 -ExpandProperty Id
+Get-NetTCPConnection -OwningProcess $vmms |
+    Where-Object {$_.State -eq 'Established'} |
+    Select-Object LocalAddress, RemoteAddress, LocalPort, RemotePort
+
+# Live Migration uses TCP/6600 (or 445 in SMB mode); we want
+# to see the expected storage/migration subnet on both sides.</code></pre>
+
+        <p>If the local address comes back as a management subnet IP, or worse, the heartbeat IP, the configuration is broken regardless of what the three layers report.</p>
+
+        <h2 id="en-4">4. The fix, explicit and validated configuration</h2>
+        <p>The remediation pattern is the same on every engagement. We make all three layers explicit and consistent, and validate with a test migration.</p>
+
+        <p><strong>1. Set cluster network roles correctly:</strong></p>
+<pre><code># Identify subnets by IP range first, names vary per deployment
+Get-ClusterNetwork | Select-Object Name, Address, Role
+
+# Storage network, typically Cluster only (not available for client traffic)
+(Get-ClusterNetwork 'Storage1').Role = 1   # Cluster
+
+# Management network, ClusterAndClient
+(Get-ClusterNetwork 'Management').Role = 3 # ClusterAndClient
+
+# Heartbeat network if separate, Cluster only
+(Get-ClusterNetwork 'Heartbeat').Role = 1  # Cluster</code></pre>
+
+        <p><strong>2. Set the cluster Live Migration priority:</strong></p>
+<pre><code># Build the priority list, IDs not names
+$preferred = Get-ClusterNetwork | Where-Object {
+    $_.Name -in 'Storage1','Storage2'
+}
+$excluded = Get-ClusterNetwork | Where-Object {
+    $_.Name -in 'Management','Heartbeat'
+}
+
+Get-ClusterResourceType -Name 'Virtual Machine' |
+    Set-ClusterParameter -Name MigrationNetworkOrder -Value ($preferred.ID -join ';')
+
+Get-ClusterResourceType -Name 'Virtual Machine' |
+    Set-ClusterParameter -Name MigrationExcludeNetworks -Value ($excluded.ID -join ';')</code></pre>
+
+        <p><strong>3. Set per-host migration networks explicitly on every node:</strong></p>
+<pre><code>Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    # Remove all existing entries first, start clean
+    Get-VMMigrationNetwork | Remove-VMMigrationNetwork
+
+    # Add only the subnets we want to use
+    Add-VMMigrationNetwork -Subnet '10.20.0.0/24' -Priority 10
+    Add-VMMigrationNetwork -Subnet '10.21.0.0/24' -Priority 20
+}</code></pre>
+
+        <div class="mid-cta">
+          <p>Slow Live Migration is not a capacity problem, it is almost always a routing problem. The three layers above are validated as standard in every CloudLabs Hyper-V Cluster Health Check, with before-and-after numbers in the report.</p>
+          <a href="../book.html">Schedule a Hyper-V Cluster Health Check intro call →</a>
+        </div>
+
+        <h2 id="en-5">5. Performance options: TCP, Compression, SMB, RDMA</h2>
+        <p>Hyper-V supports three Live Migration performance modes. Choosing the right one matters as much as choosing the right network.</p>
+        <ul>
+          <li><strong>TCP/IP.</strong> One TCP stream per migration, oldest option, lowest throughput on modern hardware. Avoid except for compatibility.</li>
+          <li><strong>Compression.</strong> TCP with on-the-fly memory compression. Good when CPU is abundant and the network is the bottleneck. Default in Windows Server 2012 R2.</li>
+          <li><strong>SMB.</strong> Uses SMB Multichannel, supports RDMA, scales automatically across multiple NICs. The right choice on any modern cluster with multiple NICs or RDMA-capable hardware. Default since Windows Server 2016.</li>
+        </ul>
+
+<pre><code>Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    # SMB is what you want on modern hardware
+    Set-VMHost -VirtualMachineMigrationPerformanceOption SMB
+    # And concurrent migration limits, tuned to your bandwidth
+    Set-VMHost -MaximumVirtualMachineMigrations 4
+    Set-VMHost -MaximumStorageMigrations 2
+}</code></pre>
+
+        <p>When SMB mode is selected and NICs support RDMA with DCB/PFC switch-side, Live Migration automatically runs over RDMA. Verify with:</p>
+<pre><code>Get-SmbClientNetworkInterface | Select-Object FriendlyName, RdmaCapable, Speed
+Get-SmbConnection                     # During an active migration
+Get-SmbMultichannelConnection         # Session detail</code></pre>
+
+        <p>On Windows Server 2025 you can layer dynamic CPU compatibility on top of this, enabling Live Migration between hosts with different CPU generations without VM shutdown. For heterogeneous clusters spanning multiple hardware refreshes, that is a noticeable operational win.</p>
+
+        <h2 id="en-6">6. End-to-end validation</h2>
+        <p>Configuration is not validation. The only way to be sure is to run an actual migration and confirm the path. The CloudLabs validation procedure:</p>
+        <ol>
+          <li>Build a test VM with 16 GB RAM and dirty most of it (a memory stress script works).</li>
+          <li>Start a packet counter on every NIC of the source host: <code>Get-NetAdapter | Get-NetAdapterStatistics</code>.</li>
+          <li>Migrate the VM and time it:
+<pre><code>Measure-Command { Move-ClusterVirtualMachineRole -Name 'TEST-LM' -Node HV02 }</code></pre></li>
+          <li>Read NIC statistics again. The bytes-per-second delta on the intended migration NIC should account for nearly the entire VM RAM size. Other NICs should stay essentially flat.</li>
+          <li>Repeat in the reverse direction to confirm symmetry.</li>
+        </ol>
+
+        <p>We capture this in the customer-facing <code>.docx</code> report with before-and-after numbers. It is one of the most tangible measurements in a Health Check: the cluster goes from "migrations take 4 minutes and saturate management" to "migrations take 28 seconds and are invisible on management".</p>
+
+        <h2 id="en-7">7. Preventing regression</h2>
+        <p>Live Migration configuration drift usually happens during three operations: NIC replacement, virtual switch reconfiguration, and node reimaging. The CloudLabs remediation runbook for this finding includes:</p>
+        <ul>
+          <li>A documented baseline of <code>Get-VMMigrationNetwork</code>, <code>Get-VMHost</code> migration settings, and <code>Get-ClusterParameter</code> output, stored in source control.</li>
+          <li>A 10-line PowerShell script that compares current state to baseline and returns non-zero exit on drift. Hooked into the monthly maintenance window.</li>
+          <li>A two-line validation step in the post-patch checklist: run a test migration, confirm the path.</li>
+          <li>A note in the node build runbook: every new node must explicitly remove default <code>VMMigrationNetwork</code> entries before joining the cluster.</li>
+        </ul>
+
+        <p>The fix for Live Migration on the wrong network is not configuration, it is the discipline to validate that configuration end to end after every change.</p>
+        <p>CloudLabs delivers this as part of the standard Hyper-V Cluster Health Check. The configuration baseline and drift detection script ship with the remediation report.</p>
+        <p><a href="../book.html"><strong>Schedule a Hyper-V Cluster Health Check intro call →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Frequently asked questions</h2>
+
+          <div class="faq-q">Why does Hyper-V not log a warning when Live Migration uses the wrong network?</div>
+          <p>Because from the cluster's perspective there is no fallback to see. The host had no <code>VMMigrationNetwork</code> entry for the intended subnet, so <code>vmms</code> picked an interface that worked. From the Cluster Service's view that is a successful migration. It is a design limitation, not a bug, and the only defence is verification of the actual path.</p>
+
+          <div class="faq-q">Does SMB mode always perform better than Compression?</div>
+          <p>On a cluster with multiple NICs or RDMA-capable hardware, yes. On a single-NIC cluster without RDMA, Compression can occasionally be slightly faster because it leans harder on CPU. In production we have not seen a scenario in the last three years where Compression was the right choice; SMB is the modern default.</p>
+
+          <div class="faq-q">What is the difference between MigrationNetworkOrder at cluster level and VMMigrationNetwork per host?</div>
+          <p>The cluster level influences which networks the cluster prefers when it coordinates a Live Migration. The per-host list is what <code>vmms</code> actually uses to bind a source IP. Both must be consistent. When they disagree, the per-host list wins in practice, because that is what actually establishes the TCP connection.</p>
+
+          <div class="faq-q">What is a reasonable MaximumVirtualMachineMigrations value?</div>
+          <p>On 25 GbE with SMB and RDMA, 4 to 8 parallel migrations is common. On 10 GbE without RDMA, 2 to 4. Test it during a maintenance window with your actual VM mix, because VMs with heavy active memory can bottleneck each other even on fast networks.</p>
+
+          <div class="faq-q">Does this affect Storage Live Migration too?</div>
+          <p>Yes, partially. Storage Live Migration uses SMB and shares the <code>MaximumStorageMigrations</code> setting. Network selection happens through SMB Multichannel, so the priority lives in SMB configuration rather than Live Migration-specific settings. The core principle still holds: know which path the traffic is actually taking.</p>
+        </div>
+      </div>
+
+      <!-- ============= DUTCH ============= -->
+      <div lang="nl">
+        <h1>Live Migration over het verkeerde netwerk: de stille Hyper-V valkuil</h1>
+        <div class="meta">Door Hans Vredevoort · 15 mei 2026 · 12 minuten leestijd · Networking</div>
+
+        <p class="lede">Live Migration die stilletjes het verkeerde netwerk gebruikt is de meest voorkomende bevinding in CloudLabs Hyper-V Cluster Health Checks. Het is precies het type misconfiguratie dat niet faalt, het draait gewoon traag, concurreert met cluster-heartbeats tijdens patch-vensters, en veroorzaakt incidenten die er als switch-problemen uitzien terwijl het in werkelijkheid verkeerd gerouteerde VM-memory transfers zijn.</p>
+        <p class="lede">Dit artikel doorloopt de drie configuratielagen, de PowerShell om het werkelijk gebruikte pad te verifiëren, en de remediation die wij in elke opdracht toepassen.</p>
+
+        <div class="toc">
+          <div class="toc-title">In dit artikel</div>
+          <ol>
+            <li><a href="#nl-1">De drie configuratielagen</a></li>
+            <li><a href="#nl-2">Hoe "verkeerde netwerk" er in werkelijkheid uitziet</a></li>
+            <li><a href="#nl-3">Het gebruikte pad verifiëren</a></li>
+            <li><a href="#nl-4">De oplossing, expliciete en gevalideerde configuratie</a></li>
+            <li><a href="#nl-5">Performance-opties: TCP, Compressie, SMB, RDMA</a></li>
+            <li><a href="#nl-6">End-to-end valideren</a></li>
+            <li><a href="#nl-7">Regressie voorkomen</a></li>
+          </ol>
+        </div>
+
+        <h2 id="nl-1">1. De drie configuratielagen</h2>
+        <p>Netwerkselectie voor Live Migration loopt over drie onafhankelijke configuratielagen. Wij vinden regelmatig clusters waarvan twee correct staan en de derde het geheel stilletjes breekt.</p>
+        <p><strong>Cluster network-rol.</strong> Elk cluster-netwerk (subnet) heeft een <code>Role</code>: <code>None</code>, <code>Cluster</code>, of <code>ClusterAndClient</code>. Het cluster overweegt alleen netwerken met rol <code>Cluster</code> of <code>ClusterAndClient</code> voor intern verkeer, inclusief Live Migration.</p>
+        <p><strong>Cluster Live Migration prioriteit.</strong> Binnen het clusterobject zit een geordende lijst van netwerken die het cluster voor Live Migration prefereert. Stel deze in via <code>Set-ClusterParameter</code> of via de GUI onder <em>Networks → Live Migration Settings</em>.</p>
+        <p><strong>Per-host VM Migration network-lijst.</strong> Elke Hyper-V host heeft zijn eigen <code>VMMigrationNetwork</code>-lijst. Dat is wat <code>vmms</code> daadwerkelijk gebruikt om aan een bron-IP te binden bij het starten van een migratie. Zegt het cluster "gebruik 10.10.20.0/24" maar heeft de host geen <code>VMMigrationNetwork</code>-entry voor dat subnet, dan valt de host terug op welke interface dan ook antwoordt, meestal het management-netwerk.</p>
+
+        <div class="callout"><strong>Waarom dit stil blijft</strong>
+        Het cluster logt geen waarschuwing wanneer fallback optreedt. Geen event. De migratie voltooit succesvol, alleen over de verkeerde NIC. De enige manier om dit te weten is verificatie van de daadwerkelijke TCP-verbinding tijdens de migratie, of per-NIC byte counters volgen tijdens een test.</div>
+
+        <h2 id="nl-2">2. Hoe "verkeerde netwerk" er in werkelijkheid uitziet</h2>
+        <p>De klassieke symptomen in productie:</p>
+        <ul>
+          <li><strong>Migraties duren 4 tot 6 minuten waar 30 tot 45 seconden zou moeten kunnen.</strong> Meestal omdat LM via een 1 GbE management-netwerk gaat in plaats van het 25 GbE storage-netwerk.</li>
+          <li><strong>Cluster-heartbeat-drops tijdens CAU-runs.</strong> Als LM en heartbeat een NIC delen, kunnen grote memory transfers de link verzadigen en de heartbeat als missing markeren.</li>
+          <li><strong>Switch-port utilisatie op management-VLAN piekt naar 90% plus tijdens patching.</strong> Netwerk-ops merkt het en opent een ticket. Het Hyper-V team legt geen relatie met LM.</li>
+          <li><strong>SMB Multichannel-sessies op onverwachte plekken.</strong> Als LM op SMB staat (default vanaf WS2016) maar geen schoon RDMA-pad heeft, valt het terug op gewone TCP-over-SMB op welke interface dan ook bereikbaar is.</li>
+        </ul>
+
+        <p>Het cluster is in al deze scenario's gezond volgens reguliere monitoring-criteria. <code>Test-Cluster</code> komt door. Failover Cluster Manager staat groen. De enige correlatie is timing. Dat is precies waarom dit een typische Hyper-V Cluster Health Check bevinding is, en niet iets wat reactieve monitoring oppakt. Zie ook <a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</a> voor het bredere patroon.</p>
+
+        <h2 id="nl-3">3. Het gebruikte pad verifiëren</h2>
+        <p>Verificatie vraagt een live test. Alleen configuratie inspecteren is niet voldoende omdat de drie lagen op niet-evidente manieren op elkaar inwerken. De procedure die CloudLabs tijdens een Health Check gebruikt:</p>
+
+        <p><strong>Stap 1, snapshot alle drie configuratielagen:</strong></p>
+<pre><code># Cluster-netwerken en hun rollen
+Get-ClusterNetwork |
+    Select-Object Name, Address, Role, AutoMetric, Metric |
+    Sort-Object Metric
+
+# Cluster Live Migration prioriteit
+$lmNetworks = (Get-ClusterResourceType -Name 'Virtual Machine' |
+    Get-ClusterParameter -Name MigrationNetworkOrder).Value
+$lmExcluded = (Get-ClusterResourceType -Name 'Virtual Machine' |
+    Get-ClusterParameter -Name MigrationExcludeNetworks).Value
+Write-Host "LM order:    $lmNetworks"
+Write-Host "LM excluded: $lmExcluded"
+
+# Per-host VM migratie-netwerkconfiguratie
+Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    [PSCustomObject]@{
+        Node     = $env:COMPUTERNAME
+        Enabled  = (Get-VMHost).VirtualMachineMigrationEnabled
+        AuthType = (Get-VMHost).VirtualMachineMigrationAuthenticationType
+        PerfMode = (Get-VMHost).VirtualMachineMigrationPerformanceOption
+        Networks = (Get-VMMigrationNetwork | Select-Object -Expand Subnet) -join ', '
+    }
+}</code></pre>
+
+        <p><strong>Stap 2, start een werkelijke Live Migration van een VM met minstens 8 GB actief geheugen:</strong></p>
+<pre><code>Move-ClusterVirtualMachineRole -Name 'TEST-LM-VM' -Node HV02</code></pre>
+
+        <p><strong>Stap 3, op de bron-host, tijdens de migratie, leg de actieve TCP-verbindingen van het VMMS-proces vast:</strong></p>
+<pre><code>$vmms = Get-Process vmms | Select-Object -First 1 -ExpandProperty Id
+Get-NetTCPConnection -OwningProcess $vmms |
+    Where-Object {$_.State -eq 'Established'} |
+    Select-Object LocalAddress, RemoteAddress, LocalPort, RemotePort
+
+# Live Migration gebruikt TCP/6600 (of 445 in SMB-mode); we willen
+# het verwachte storage/migratie-subnet aan beide kanten zien.</code></pre>
+
+        <p>Komt het local address terug als een management-subnet IP, of erger, het heartbeat-IP, dan is de configuratie kapot, ongeacht wat de drie lagen rapporteren.</p>
+
+        <h2 id="nl-4">4. De oplossing, expliciete en gevalideerde configuratie</h2>
+        <p>Het remediation-patroon is in elke opdracht gelijk. We maken alle drie de lagen expliciet en consistent, en valideren met een test-migratie.</p>
+
+        <p><strong>1. Stel cluster network-rollen correct in:</strong></p>
+<pre><code># Identificeer subnetten op IP-range eerst, namen wisselen per deployment
+Get-ClusterNetwork | Select-Object Name, Address, Role
+
+# Storage-netwerk, typisch alleen Cluster (niet beschikbaar voor client-verkeer)
+(Get-ClusterNetwork 'Storage1').Role = 1   # Cluster
+
+# Management-netwerk, ClusterAndClient
+(Get-ClusterNetwork 'Management').Role = 3 # ClusterAndClient
+
+# Heartbeat-netwerk indien apart, alleen Cluster
+(Get-ClusterNetwork 'Heartbeat').Role = 1  # Cluster</code></pre>
+
+        <p><strong>2. Stel de cluster Live Migration-prioriteit in:</strong></p>
+<pre><code># Bouw de prioriteitenlijst, ID's, geen namen
+$preferred = Get-ClusterNetwork | Where-Object {
+    $_.Name -in 'Storage1','Storage2'
+}
+$excluded = Get-ClusterNetwork | Where-Object {
+    $_.Name -in 'Management','Heartbeat'
+}
+
+Get-ClusterResourceType -Name 'Virtual Machine' |
+    Set-ClusterParameter -Name MigrationNetworkOrder -Value ($preferred.ID -join ';')
+
+Get-ClusterResourceType -Name 'Virtual Machine' |
+    Set-ClusterParameter -Name MigrationExcludeNetworks -Value ($excluded.ID -join ';')</code></pre>
+
+        <p><strong>3. Stel per-host migratie-netwerken expliciet in op iedere node:</strong></p>
+<pre><code>Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    # Eerst alle bestaande entries verwijderen, schoon beginnen
+    Get-VMMigrationNetwork | Remove-VMMigrationNetwork
+
+    # Voeg alleen de subnetten toe die we willen gebruiken
+    Add-VMMigrationNetwork -Subnet '10.20.0.0/24' -Priority 10
+    Add-VMMigrationNetwork -Subnet '10.21.0.0/24' -Priority 20
+}</code></pre>
+
+        <div class="mid-cta">
+          <p>Trage Live Migration is geen capaciteitsprobleem, het is bijna altijd een routeringsprobleem. De drie lagen hierboven valideren we standaard in elke CloudLabs Hyper-V Cluster Health Check, met voor- en na-cijfers in het rapport.</p>
+          <a href="../book.html">Plan een Hyper-V Cluster Health Check kennismaking →</a>
+        </div>
+
+        <h2 id="nl-5">5. Performance-opties: TCP, Compressie, SMB, RDMA</h2>
+        <p>Hyper-V ondersteunt drie Live Migration performance-modi. De juiste kiezen telt net zo zwaar als het juiste netwerk kiezen.</p>
+        <ul>
+          <li><strong>TCP/IP.</strong> Eén TCP-stream per migratie, oudste optie, laagste throughput op moderne hardware. Vermijd, behalve voor compatibility.</li>
+          <li><strong>Compressie.</strong> TCP met on-the-fly memory compression. Goed wanneer CPU overvloedig is en netwerk de bottleneck. Default in Windows Server 2012 R2.</li>
+          <li><strong>SMB.</strong> Gebruikt SMB Multichannel, ondersteunt RDMA, schaalt automatisch over meerdere NIC's. De juiste keuze op elk modern cluster met meerdere NIC's of RDMA-capable hardware. Default vanaf Windows Server 2016.</li>
+        </ul>
+
+<pre><code>Invoke-Command -ComputerName (Get-ClusterNode).Name {
+    # SMB is wat je wilt op moderne hardware
+    Set-VMHost -VirtualMachineMigrationPerformanceOption SMB
+    # En gelijktijdige migraties, afstemmen op je bandbreedte
+    Set-VMHost -MaximumVirtualMachineMigrations 4
+    Set-VMHost -MaximumStorageMigrations 2
+}</code></pre>
+
+        <p>Wanneer SMB-mode is gekozen en de NIC's RDMA ondersteunen met DCB/PFC op switchzijde, draait Live Migration automatisch over RDMA. Verifieer met:</p>
+<pre><code>Get-SmbClientNetworkInterface | Select-Object FriendlyName, RdmaCapable, Speed
+Get-SmbConnection                     # Tijdens een actieve migratie
+Get-SmbMultichannelConnection         # Sessiedetails</code></pre>
+
+        <p>Op Windows Server 2025 kun je daar bovenop dynamic CPU compatibility activeren, wat Live Migration tussen hosts met verschillende CPU-generaties mogelijk maakt zonder VM-shutdown. Voor heterogene clusters die over een paar hardware-refreshes heen reiken, is dat een merkbare operationele winst.</p>
+
+        <h2 id="nl-6">6. End-to-end valideren</h2>
+        <p>Configuratie is geen validatie. De enige manier om zeker te zijn, is een werkelijke migratie draaien en het pad bevestigen. De CloudLabs validatieprocedure:</p>
+        <ol>
+          <li>Bouw een test-VM met 16 GB RAM, vervuil het grootste deel ervan (een memory-stress script werkt).</li>
+          <li>Start een packet counter op iedere NIC van de bron-host: <code>Get-NetAdapter | Get-NetAdapterStatistics</code>.</li>
+          <li>Migreer de VM en meet de tijd:
+<pre><code>Measure-Command { Move-ClusterVirtualMachineRole -Name 'TEST-LM' -Node HV02 }</code></pre></li>
+          <li>Lees de NIC-statistieken opnieuw. De bytes-per-second delta op de beoogde migratie-NIC moet bijna de hele VM-RAM-grootte verklaren. Andere NIC's moeten in wezen vlak blijven.</li>
+          <li>Herhaal in omgekeerde richting om symmetrie te bevestigen.</li>
+        </ol>
+
+        <p>Wij leggen dit vast in het klantgerichte <code>.docx</code>-rapport met voor- en na-cijfers. Het is een van de meest tastbare metingen in een Health Check: het cluster gaat van "migraties duren 4 minuten en verzadigen management" naar "migraties duren 28 seconden en zijn niet zichtbaar op management".</p>
+
+        <h2 id="nl-7">7. Regressie voorkomen</h2>
+        <p>Live Migration-configuratiedrift gebeurt meestal bij drie operaties: NIC-vervanging, virtuele-switch herconfiguratie, en node re-imaging. De CloudLabs remediation-runbook voor deze bevinding bevat:</p>
+        <ul>
+          <li>Een gedocumenteerde baseline van <code>Get-VMMigrationNetwork</code>, <code>Get-VMHost</code>-migratie-instellingen en <code>Get-ClusterParameter</code>-output, in source control opgeslagen.</li>
+          <li>Een PowerShell-script van 10 regels dat huidige status met baseline vergelijkt en non-zero exit geeft bij drift. Wordt ingehaakt in het maandelijkse onderhoudsvenster.</li>
+          <li>Een tweeregelige validatiestap in de post-patch checklist: voer een test-migratie uit, bevestig het pad.</li>
+          <li>Een notitie in de node-build runbook: elke nieuwe node moet default <code>VMMigrationNetwork</code>-entries expliciet verwijderen vóór toetreding tot het cluster.</li>
+        </ul>
+
+        <p>De fix voor Live Migration over het verkeerde netwerk is niet configuratie, het is de discipline om die configuratie na elke wijziging end-to-end te valideren.</p>
+        <p>CloudLabs levert dit als onderdeel van de standaard Hyper-V Cluster Health Check. De configuratie-baseline en het drift-detection script zitten in het remediation-rapport.</p>
+        <p><a href="../book.html"><strong>Plan een Hyper-V Cluster Health Check kennismaking →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Veelgestelde vragen</h2>
+
+          <div class="faq-q">Waarom logt Hyper-V geen waarschuwing als Live Migration over het verkeerde netwerk gaat?</div>
+          <p>Omdat het cluster vanuit zijn perspectief geen fallback ziet. De host had geen <code>VMMigrationNetwork</code>-entry voor het gewenste subnet, dus <code>vmms</code> koos een interface die wel werkte. Vanuit de Cluster Service is dat een succesvolle migratie. Het is een ontwerpbeperking, niet een bug, en de enige verdediging is verificatie van het werkelijke pad.</p>
+
+          <div class="faq-q">Werkt SMB-mode altijd beter dan Compressie?</div>
+          <p>Op een cluster met meerdere NIC's of RDMA-capable hardware, ja. Op een single-NIC cluster zonder RDMA is Compressie soms iets sneller omdat het zwaarder leunt op CPU. In productie hebben we de afgelopen drie jaar geen scenario meer gezien waar Compressie de juiste keuze was; SMB is de moderne default.</p>
+
+          <div class="faq-q">Wat is het verschil tussen MigrationNetworkOrder op cluster-niveau en VMMigrationNetwork per host?</div>
+          <p>Het cluster-niveau beïnvloedt welke netwerken het cluster prefereert wanneer hij een Live Migration coördineert. De per-host lijst is wat <code>vmms</code> daadwerkelijk gebruikt om een bron-IP te binden. Beide moeten consistent zijn. Als ze afwijken wint in de praktijk de per-host lijst, omdat dat is wat de TCP-verbinding daadwerkelijk opzet.</p>
+
+          <div class="faq-q">Wat is een redelijke MaximumVirtualMachineMigrations waarde?</div>
+          <p>Op 25 GbE met SMB en RDMA: 4 tot 8 parallelle migraties is gangbaar. Op 10 GbE zonder RDMA: 2 tot 4. Test het tijdens een onderhoudsvenster met je werkelijke VM-mix, want VM's met veel actief geheugen kunnen elkaar bottlenecken zelfs op snelle netwerken.</p>
+
+          <div class="faq-q">Heeft dit ook invloed op Storage Live Migration?</div>
+          <p>Ja, deels. Storage Live Migration gebruikt SMB en deelt de <code>MaximumStorageMigrations</code>-instelling. De netwerkselectie loopt langs SMB Multichannel, dus de prioriteit zit eerder in SMB-configuratie dan in de Live Migration-specifieke instellingen. Maar het basisprincipe blijft: weet welk pad het verkeer daadwerkelijk neemt.</p>
+        </div>
+      </div>
+
+      <div class="related">
+        <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
+        <ul>
+          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
+          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership onbalans: oorzaken en oplossingen</span></a></li>
+          <li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>
+          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
+    <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.3.3</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!doctype html>
+<!-- CloudLabs · v0.3.3 · Blog · VMware to Hyper-V Migration Assessment -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="../favicon.png" type="image/png">
+<title>VMware to Hyper-V Cluster Migration: A 6-Step Pre-Migration Assessment · CloudLabs</title>
+<meta name="description" content="The 6-step CloudLabs pre-migration assessment for VMware to Hyper-V cluster migrations in 2026: capacity, network parity, CSV design, guest readiness, backup/DR, and cutover with rollback criteria.">
+<link rel="canonical" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html">
+<link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html">
+<meta property="og:title" content="VMware to Hyper-V Cluster Migration: A 6-Step Pre-Migration Assessment">
+<meta property="og:description" content="The 6-step CloudLabs pre-migration assessment for VMware to Hyper-V cluster migrations in 2026.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<meta property="article:published_time" content="2026-05-15">
+<meta property="article:author" content="Hans Vredevoort">
+<meta property="article:section" content="Migration">
+<meta property="article:tag" content="VMware">
+<meta property="article:tag" content="Hyper-V">
+<meta property="article:tag" content="Migration">
+<meta property="article:tag" content="Broadcom">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BlogPosting",
+  "headline":"VMware to Hyper-V Cluster Migration: A 6-Step Pre-Migration Assessment",
+  "description":"The 6-step CloudLabs pre-migration assessment for VMware to Hyper-V cluster migrations in 2026: capacity, network parity, CSV design, guest readiness, backup/DR, and cutover with rollback criteria.",
+  "image":"https://cldlbs.com/images/cluster.jpg",
+  "datePublished":"2026-05-15",
+  "dateModified":"2026-05-15",
+  "author":{"@type":"Person","name":"Hans Vredevoort","url":"https://cldlbs.com/about.html","jobTitle":"Hyper-V & Cluster Consultant","worksFor":{"@type":"Organization","name":"CloudLabs"}},
+  "publisher":{"@type":"Organization","name":"CloudLabs","url":"https://cldlbs.com/","logo":{"@type":"ImageObject","url":"https://cldlbs.com/favicon.png"}},
+  "mainEntityOfPage":{"@type":"WebPage","@id":"https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html"},
+  "articleSection":"Migration",
+  "keywords":"VMware to Hyper-V, Broadcom, Migration Assessment, Cluster Migration, vSphere, Hyper-V, SCVMM, Veeam, 2026"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://cldlbs.com/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://cldlbs.com/blog.html"},
+    {"@type":"ListItem","position":3,"name":"VMware to Hyper-V Migration Assessment","item":"https://cldlbs.com/blog/vmware-to-hyper-v-migration-assessment.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"How long does a typical VMware to Hyper-V migration take?",
+      "acceptedAnswer":{"@type":"Answer","text":"For 50 to 100 VMs, typically three to four months including assessment (4 to 6 weeks), migration execution (8 to 12 weeks in batches), and post-migration validation. Larger environments (500+) run 9 to 18 months, depending on workload complexity and cutover window availability."}
+    },
+    {
+      "@type":"Question",
+      "name":"Can I do a gradual migration, or does it have to be big-bang?",
+      "acceptedAnswer":{"@type":"Answer","text":"Gradual works better nearly always. We see big-bang migrations only in very specific cases (datacenter move, hardware end-of-life with hard deadline). A phased approach per workload cluster gives time to refine scripts and runbooks on low-risk VMs before touching critical workloads."}
+    },
+    {
+      "@type":"Question",
+      "name":"What about VMware NSX microsegmentation?",
+      "acceptedAnswer":{"@type":"Answer","text":"Four options. Hyper-V Network Virtualization (technically mature, rarely seen in production), Azure Arc plus Azure Network Security Groups for hybrid scenarios, third-party microsegmentation tools (Illumio, Akamai Guardicore), or accept that microsegmentation gets solved post-migration at a different layer (firewall, OS-level). Which choice fits depends on regulatory requirements and what the network team can operationalise."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does Live Migration work between vSphere and Hyper-V during transition?",
+      "acceptedAnswer":{"@type":"Answer","text":"No. Cross-hypervisor live migration does not exist. What does work is parallel running during cutover windows and moving VMs one at a time with scheduled downtime. The WAC VM Conversion Extension offers online migration but that is replication plus cutover, not vMotion-style live migration."}
+    },
+    {
+      "@type":"Question",
+      "name":"Do you have experience with VMware to Hyper-V for large environments?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes. CloudLabs has led VMware to Hyper-V migrations for customers with 50 to 800 VMs. The approach scales; the assessment phase becomes longer and cutover windows get more complex. For environments above 500 VMs we recommend tooling around SCVMM 2025 or Veeam, not the WAC extension."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .article{max-width:75ch;margin-top:8px}
+  .article .breadcrumb{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:18px}
+  .article .breadcrumb a{color:var(--ink-dim);text-decoration:none}
+  .article .breadcrumb a:hover{color:var(--cyan)}
+  .article h1{font-size:clamp(24px,4.4vw,36px);font-weight:600;line-height:1.2;margin:0 0 14px}
+  .article .meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:28px}
+  .article .lede{font-size:17px;line-height:1.6;color:var(--ink-dim);margin-bottom:18px}
+  .article h2{font-size:21px;font-weight:600;line-height:1.3;margin:40px 0 14px;color:var(--ink)}
+  .article h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+  .article p{font-size:15px;line-height:1.7;color:var(--ink-dim);margin:0 0 14px}
+  .article ul,.article ol{font-size:15px;line-height:1.7;color:var(--ink-dim);padding-left:22px;margin:0 0 14px}
+  .article li{margin-bottom:6px}
+  .article a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .article strong{color:var(--ink)}
+  .article code{font-family:var(--mono);font-size:13px;background:rgba(95,227,255,.08);color:var(--cyan);padding:1px 6px;border-radius:4px}
+  .article pre{background:rgba(15,24,50,.7);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink);margin:0 0 18px;line-height:1.55}
+  .article pre code{background:none;color:inherit;padding:0}
+  .article blockquote{border-left:2px solid var(--cyan);padding:6px 18px;margin:18px 0;color:var(--ink);font-style:italic;background:rgba(95,227,255,.04)}
+  .callout{border:1px solid var(--line-strong);border-radius:10px;padding:14px 18px;margin:18px 0;background:rgba(95,227,255,.04)}
+  .callout strong{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .mid-cta{border:1px solid var(--cyan);border-radius:12px;padding:22px 24px;margin:32px 0;background:linear-gradient(135deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .mid-cta p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 12px}
+  .mid-cta a{color:var(--cyan);font-weight:600;font-size:15px;text-decoration:none;border-bottom:0;display:inline-flex;align-items:center;gap:6px}
+  .mid-cta a:hover{color:var(--ink)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 28px;background:rgba(255,255,255,.02)}
+  .toc-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .toc ol{padding-left:20px;margin:0;font-size:14px;line-height:1.7}
+  .toc a{color:var(--ink-dim);text-decoration:none;border-bottom:0}
+  .toc a:hover{color:var(--cyan)}
+  .faq-block{margin-top:40px}
+  .faq-block h2{margin-bottom:18px}
+  .faq-q{font-size:16px;font-weight:600;color:var(--ink);margin:18px 0 6px}
+  .related{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+  .related h3{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .related ul{list-style:none;padding:0;margin:0}
+  .related li{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="../index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="../index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="../services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="../method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="../findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="../engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="../about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="../book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="../faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="../blog.html" aria-current="page"><span class="n">09</span><span lang="en">Blog</span><span lang="nl">Blog</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <article class="article">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../index.html"><span lang="en">Home</span><span lang="nl">Home</span></a> ·
+        <a href="../blog.html">Blog</a> ·
+        <span lang="en">VMware to Hyper-V Migration Assessment</span>
+        <span lang="nl">VMware naar Hyper-V migratie assessment</span>
+      </nav>
+
+      <!-- ============= ENGLISH ============= -->
+      <div lang="en">
+        <h1>VMware to Hyper-V Cluster Migration: A 6-Step Pre-Migration Assessment</h1>
+        <div class="meta">By Hans Vredevoort · 15 May 2026 · 15 minute read · Migration</div>
+
+        <p class="lede">VMware to Hyper-V migrations in 2026 are no longer something only Microsoft shops consider. Since the Broadcom acquisition, the subscription-only licensing model has become financially untenable for many organisations, and Hyper-V plus Windows Server is the most pragmatic alternative for Microsoft-oriented infrastructures. Gartner forecasts 35% of VMware workloads will move between now and 2028. A significant portion lands on Hyper-V.</p>
+        <p class="lede">But moving the VMs is not the hard step. The hard step is determining whether the target Hyper-V cluster is actually ready to receive the workloads, and which configuration decisions you need to take now that you do not want to undo two years later. This article is the pre-migration assessment CloudLabs runs before the first VM moves.</p>
+
+        <div class="toc">
+          <div class="toc-title">In this article</div>
+          <ol>
+            <li><a href="#en-1">Why a pre-migration assessment makes the difference</a></li>
+            <li><a href="#en-2">Step 1, capacity and consolidation modelling</a></li>
+            <li><a href="#en-3">Step 2, network parity and VLAN mapping</a></li>
+            <li><a href="#en-4">Step 3, storage assessment and CSV design</a></li>
+            <li><a href="#en-5">Step 4, guest readiness and driver strategy</a></li>
+            <li><a href="#en-6">Step 5, backup, DR, and runbook parity</a></li>
+            <li><a href="#en-7">Step 6, cutover strategy and rollback criteria</a></li>
+            <li><a href="#en-8">The tools that work in 2026</a></li>
+            <li><a href="#en-9">Three pitfalls we keep seeing</a></li>
+          </ol>
+        </div>
+
+        <h2 id="en-1">1. Why a pre-migration assessment makes the difference</h2>
+        <p>Most failed VMware to Hyper-V migrations we investigate afterwards are not broken because the conversion tool failed. They are broken because the Hyper-V cluster was not ready: insufficient RAM headroom for N-1, a network topology that could not map VMware port groups 1-to-1, or a backup strategy that leaned on vCenter snapshots and does not work on Hyper-V.</p>
+        <p>The assessment does four things the migration tool itself does not do. It models capacity against actual load rather than allocated values. It identifies target-environment configuration decisions that need to be per-VM properties before cutover. It surfaces operational knowledge gaps (monitoring, patching, backup procedures). And it writes a rollback criteria document so the migration team knows when to stop.</p>
+        <p>The assessment typically takes four to six working days for an environment up to 100 VMs, delivers a go/no-go recommendation, and on go a detailed migration plan that speeds up the migration phase by roughly 30% through eliminated rework. For customers ready to migrate, and for customers better off spending two more months on Hyper-V cluster hardening first.</p>
+
+        <h2 id="en-2">2. Step 1, capacity and consolidation modelling</h2>
+        <p>VMware and Hyper-V size resources differently. A vSphere VM with 8 vCPU and 32 GB RAM rarely uses all 8 vCPUs simultaneously, and VMware's CPU scheduler hides that efficiently. Move the same VM to Hyper-V and you get the same allocation without the same scheduler optimisations.</p>
+
+        <p><strong>What we actually measure:</strong></p>
+        <ul>
+          <li><strong>CPU usage as a percentage of allocated values</strong> over a 30-day window, not peaks but P95. A VM with 8 vCPUs running at P95 12% can comfortably run with 4 vCPUs on Hyper-V, giving the cluster 50% more consolidation room.</li>
+          <li><strong>Active memory usage (working set)</strong>, not allocated memory. VMware memory ballooning masks overcommitment, Hyper-V Dynamic Memory works differently. We model consolidation against real working set plus 20% headroom.</li>
+          <li><strong>Disk I/O patterns, average and P99.</strong> Hyper-V on SAN storage behaves differently from VMware on vSAN, and some workloads (strongly metadata-heavy Exchange, certain database engines) are more sensitive to CSV coordinator load than to raw throughput.</li>
+          <li><strong>Network traffic per VM</strong>, not just aggregates. VMs with strong east-west traffic patterns benefit from anti-affinity so they do not land on the same host during automatic balancing.</li>
+        </ul>
+
+        <p><strong>The N-1 question:</strong></p>
+        <p>A four-node cluster must keep all workloads running on loss of one node. That means 75% of physical capacity must carry 100% of the workload, with enough RAM headroom for consolidation. We model this explicitly and document the outcome. If the N-1 state pushes RAM utilisation above 90%, there is insufficient headroom, and the recommendation becomes either more nodes, fewer workloads per node, or accepting that in N-1 state you have no Live Migration headroom.</p>
+
+        <h2 id="en-3">3. Step 2, network parity and VLAN mapping</h2>
+        <p>VMware port groups, distributed vSwitches, and NSX segments need to be mapped 1-to-1 to Hyper-V virtual switches, VLAN tags, and possibly SDN. Usually not complicated, but the cataloguing must be exhaustive before migration starts.</p>
+        <p>Per port group we document the VLAN ID, the naming convention to use on Hyper-V, any QoS policies, and which VMs attach to it. For distributed vSwitches with multiple uplink policies (LACP, failover order) we determine the Hyper-V equivalent: SET with dynamic load balancing, or a specific teaming mode.</p>
+        <p>For customers using NSX for microsegmentation, this is when the strategic decision happens: Hyper-V Network Virtualization, Azure Arc integration with Azure Network Security Groups for hybrid scenarios, or accept that microsegmentation gets solved post-migration at a different layer (firewall, OS-level).</p>
+
+        <p><strong>What we find during network parity work:</strong></p>
+        <ul>
+          <li>VMware environments with port groups that have become orphans over the years, no VMs attached but carefully planned and documented. Do we migrate them or leave them? Answer: leave them, document the decision, prevent a development team asking six months later where VLAN 247 went.</li>
+          <li>VLAN tagging done at port group level on vSphere that must be done at VM NIC level on Hyper-V. Sounds trivial, breaks every time it is done without a pre-check.</li>
+          <li>Promiscuous mode or MAC address changes allowed on vSphere for specific security tools must be translated to <code>Set-VMNetworkAdapter -MacAddressSpoofing On</code> per VM on Hyper-V.</li>
+        </ul>
+
+        <h2 id="en-4">4. Step 3, storage assessment and CSV design</h2>
+        <p>The target Hyper-V cluster has CSVs, vSphere has VMFS datastores. The mapping is usually not 1-to-1, which is good news. It is an opportunity to redesign CSV layout based on what you now know about the workloads.</p>
+
+        <p><strong>Our CSV design guidelines during a pre-migration assessment:</strong></p>
+        <ul>
+          <li><strong>CSVs per workload type, not per VMware datastore.</strong> One CSV for fileserver VMs, one for database VMs, one for general Windows Server VMs. This enables later capacity planning, snapshot strategy, and per-CSV performance tuning.</li>
+          <li><strong>Number of CSVs equal to or just above the number of nodes</strong>, for automatic balancing. On a four-node cluster, four to six CSVs work better than twelve, because the balancer finds even distribution more easily. See <a href="csv-ownership-imbalance.html">CSV ownership imbalance</a> for what happens when this goes wrong.</li>
+          <li><strong>CSV size around 4 to 8 TB</strong> for SAN-attached clusters. Above 10 TB, volume operations (chkdsk, backup snapshot recovery) become operationally unwieldy.</li>
+          <li><strong>Plan anti-affinity and CSV placement together.</strong> Two DCs on the same CSV but forced onto different nodes still leaves a single point of failure at the storage layer. Document both.</li>
+        </ul>
+
+        <p><strong>For customers moving from VMware vSAN to Hyper-V on SAN:</strong></p>
+        <p>A fundamental architectural shift: vSAN was hyperconverged, SAN-attached Hyper-V is not. Storage and compute paths are now separate, MPIO and zoning come back into play, and backup strategies that leaned on vSAN snapshots need to be reworked. For customers preferring to stay hyperconverged, <a href="azure-local-migration-readiness.html">Azure Local</a> is a parallel track with its own readiness assessment.</p>
+
+        <h2 id="en-5">5. Step 4, guest readiness and driver strategy</h2>
+        <p>The VMs themselves need to be ready for Hyper-V. Biggest pitfalls:</p>
+        <ul>
+          <li><strong>VMware Tools must be removed before conversion</strong>, or the first boot on Hyper-V goes wrong. On Windows guests this typically works through scheduled removal during a maintenance window, or through a script that runs automatically post-conversion.</li>
+          <li><strong>Hyper-V Integration Services must be present and current after conversion.</strong> For modern Windows versions (2016 and newer) this lives in the OS, for older Linux versions or legacy Windows versions manual installation may be required.</li>
+          <li><strong>Generation 1 vs Generation 2 decision.</strong> VMware VMs typically arrive as BIOS-boot, which is Generation 1 on Hyper-V. For modern workloads with UEFI and Secure Boot you want Generation 2, but that requires bootloader reinstallation or in some cases a full OS reinstall. Our recommendation: bring existing VMs in as Gen 1, plan Gen 2 as future modernisation, not as a migration blocker.</li>
+          <li><strong>Linux VMs with kernels older than 3.10</strong> or distributions without Hyper-V Linux Integration Services cannot be reliably migrated without upgrading the kernel or distribution first. That is on its own a justifiable reason to modernise the VM rather than migrate it.</li>
+        </ul>
+
+        <div class="callout"><strong>The Windows Server 2025 Hyper-V pitfall</strong>
+        On Windows Server 2025 Hyper-V, Windows Server 2012 R2 and 2016 guest VMs are no longer supported. In some cases they do not even start. This is the direct trigger for customers to plan their OS upgrade strategy alongside the hypervisor migration, rather than as separate projects.</div>
+
+        <div class="mid-cta">
+          <p>A thorough pre-migration assessment for an environment of 50 to 100 VMs takes four to six working days and delivers the difference between a migration that runs over budget and schedule, and one that delivers on time.</p>
+          <p>CloudLabs runs this as a fixed-scope engagement, delivers the report in English or Dutch as a customer-facing <code>.docx</code>, and includes a detailed migration runbook plus rollback criteria.</p>
+          <a href="../book.html">Schedule a pre-migration assessment →</a>
+        </div>
+
+        <h2 id="en-6">6. Step 5, backup, DR, and runbook parity</h2>
+        <p>VMware-oriented operations teams have built up years of procedural knowledge: how to roll back a snapshot, how to patch vCenter clusters without vMotion storms, how to orchestrate Site Recovery Manager. That knowledge is largely not transferable.</p>
+
+        <p><strong>What we capture during the assessment:</strong></p>
+        <ul>
+          <li><strong>The existing backup product</strong> and whether it is Hyper-V aware. Veeam, Commvault, Cohesity, and Rubrik all mature Hyper-V support, but configuration and best practices differ from vSphere. Expect a license change if the current license only covers vSphere.</li>
+          <li><strong>CSV backup mode.</strong> Hardware VSS provider vs software VSS, and what impact that has on backup windows and CSV coordinator load during the backup. This is a topic many teams only learn during the first production incident, and worth testing before cutover.</li>
+          <li><strong>Disaster recovery.</strong> Hyper-V Replica, Azure Site Recovery, or third-party replication? VMware Site Recovery Manager has no direct equivalent on Hyper-V, and the runbook needs to be rewritten. CloudLabs delivers a DR runbook template as part of the assessment.</li>
+          <li><strong>Monitoring.</strong> Which vSphere alerts exist, and what Hyper-V equivalents are available? Many SCOM management packs have seen little attention over recent years, and modern choices include Windows Admin Center plus Azure Arc, or third-party tools (PRTG, ManageEngine, Site24x7).</li>
+        </ul>
+
+        <h2 id="en-7">7. Step 6, cutover strategy and rollback criteria</h2>
+        <p>The final part of the assessment is a cutover plan with explicit rollback criteria. Not "we'll see how it goes", but "if these three things are true, we roll back to vSphere".</p>
+
+        <p><strong>The rollback trigger set we use as standard:</strong></p>
+        <ul>
+          <li>A migrated VM does not start within 30 minutes after cutover and has no working remediation within 2 hours. Roll back.</li>
+          <li>P99 latency on a migrated production workload is more than 2x worse than on vSphere, 72 hours after cutover. Roll back unless root cause is found and the fix is demonstrably working.</li>
+          <li>Authentication or Active Directory issues affecting more than 5% of users and not resolved within the first maintenance window. Roll back.</li>
+        </ul>
+
+        <p><strong>Cutover order:</strong></p>
+        <ol>
+          <li>Start with dev/test VMs and non-critical production. Build experience, validate scripts, refine runbooks. No critical workload in the first batch.</li>
+          <li>Then stateless production: web-tier servers, application-tier without local state. Cutover time per VM is low, rollback is cheap.</li>
+          <li>Finally, stateful production: databases, fileservers, identity. This is where most pre-cutover validation and most rollback worries live. Plan generous maintenance windows, and plan reserve days for unexpected issues.</li>
+        </ol>
+
+        <p>Decommissioning VMware vCenter itself is the last step, not the first. A working vCenter alongside the Hyper-V cluster for six weeks after the last VM migration is cheap insurance, and we recommend it as standard.</p>
+
+        <h2 id="en-8">8. The tools that work in 2026</h2>
+        <p><strong>Microsoft Windows Admin Center VM Conversion Extension</strong> (preview at the time of writing). Online migration with minimal downtime, free with Windows Admin Center. Supports Windows and modern Linux distributions. Best suited for batches up to several dozen VMs. For larger migrations we have seen better production results with SCVMM or Veeam.</p>
+        <p><strong>System Center VMM 2025.</strong> Enterprise-scale VMware to Hyper-V conversion, up to 4x faster than previous versions. Requires offline VM conversion (source VM must be powered off), so cutover windows are longer. The right tool for large migrations (hundreds of VMs) where batching and orchestration matter more than per-VM downtime.</p>
+        <p><strong>Veeam Backup &amp; Replication.</strong> Restore a vSphere backup directly to Hyper-V. Works independently of conversion tools, makes rollback easier (the source stays intact), and fits environments that already use Veeam for backup. From Veeam 12.x onwards, Hyper-V target support is mature.</p>
+        <p><strong>PowerShell with <code>Convert-VHD</code> plus manual hookup.</strong> For low-volume migrations and anything that does not fit the tools above. We script this as a standard option in CloudLabs migration engagements for batch VMs and dev/test environments.</p>
+        <p><strong>Microsoft Virtual Machine Converter (MVMC)</strong> is end-of-life and no longer supported. Do not use for new migrations, regardless of how many old blog posts still link to it.</p>
+
+        <h2 id="en-9">9. Three pitfalls we keep seeing</h2>
+        <ol>
+          <li><strong>Underestimating guest OS upgrade work.</strong> Customers plan the hypervisor migration as if it is pure infrastructure, but Windows Server 2012 R2 and 2016 are not supported on Windows Server 2025 Hyper-V. The OS upgrade sits in 30 to 60% of the VMs and needs to be in the migration plan.</li>
+          <li><strong>Backup license not checked before cutover.</strong> Veeam, Commvault, and others often charge per workload type. A license covering only vSphere does not cover Hyper-V. Customers discover this three days before the first cutover, then need to run a four-week procurement cycle.</li>
+          <li><strong>No budget for two months of parallel running.</strong> vCenter and the old VMware license stay live until after the last VM migration, plus several weeks for rollback safety. That is 2 to 4 months of double licensing cost. Factor it into the business case.</li>
+        </ol>
+
+        <h2>The CloudLabs approach</h2>
+        <p>A pre-migration assessment runs as a fixed-scope engagement, four to six working days for environments up to 100 VMs. The deliverable includes a capacity model, a detailed migration plan per VM batch, a go/no-go recommendation, and the rollback criteria.</p>
+        <p>For customers without internal capacity for the migration itself, we also handle execution. For customers running their own migration, we deliver the runbook and stay available for escalations during cutover windows.</p>
+        <p><a href="../book.html"><strong>Schedule a VMware to Hyper-V pre-migration assessment →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Frequently asked questions</h2>
+
+          <div class="faq-q">How long does a typical VMware to Hyper-V migration take?</div>
+          <p>For 50 to 100 VMs, typically three to four months including assessment (4 to 6 weeks), migration execution (8 to 12 weeks in batches), and post-migration validation. Larger environments (500+) run 9 to 18 months, depending on workload complexity and cutover window availability.</p>
+
+          <div class="faq-q">Can I do a gradual migration, or does it have to be big-bang?</div>
+          <p>Gradual works better nearly always. We see big-bang migrations only in very specific cases (datacenter move, hardware end-of-life with hard deadline). A phased approach per workload cluster gives time to refine scripts and runbooks on low-risk VMs before touching critical workloads.</p>
+
+          <div class="faq-q">What about VMware NSX microsegmentation?</div>
+          <p>Four options. Hyper-V Network Virtualization (technically mature, rarely seen in production), Azure Arc plus Azure Network Security Groups for hybrid scenarios, third-party microsegmentation tools (Illumio, Akamai Guardicore), or accept that microsegmentation gets solved post-migration at a different layer (firewall, OS-level). Which choice fits depends on regulatory requirements and what the network team can operationalise.</p>
+
+          <div class="faq-q">Does Live Migration work between vSphere and Hyper-V during transition?</div>
+          <p>No. Cross-hypervisor live migration does not exist. What does work is parallel running during cutover windows and moving VMs one at a time with scheduled downtime. The WAC VM Conversion Extension offers "online migration" but that is replication plus cutover, not vMotion-style live migration.</p>
+
+          <div class="faq-q">Do you have experience with VMware to Hyper-V for large environments?</div>
+          <p>Yes. CloudLabs has led VMware to Hyper-V migrations for customers with 50 to 800 VMs. The approach scales; the assessment phase becomes longer and cutover windows get more complex. For environments above 500 VMs we recommend tooling around SCVMM 2025 or Veeam, not the WAC extension.</p>
+        </div>
+      </div>
+
+      <!-- ============= DUTCH ============= -->
+      <div lang="nl">
+        <h1>VMware naar Hyper-V cluster migratie: pre-migration assessment in 6 stappen</h1>
+        <div class="meta">Door Hans Vredevoort · 15 mei 2026 · 15 minuten leestijd · Migratie</div>
+
+        <p class="lede">VMware naar Hyper-V migraties zijn in 2026 niet meer iets dat alleen Microsoft-shops overwegen. Sinds de Broadcom-overname is de subscription-only licentiestructuur voor veel organisaties financieel onhoudbaar geworden, en Hyper-V plus Windows Server is voor Microsoft-georiënteerde infrastructuren het meest pragmatische alternatief. Gartner voorspelt dat 35% van de VMware-workloads tussen nu en 2028 verhuist. Een aanzienlijk deel daarvan komt op Hyper-V terecht.</p>
+        <p class="lede">Maar het verplaatsen van VM's is niet de moeilijke stap. De moeilijke stap is bepalen of het doel-Hyper-V cluster werkelijk klaar is om de workloads op te vangen, en welke configuratiebeslissingen je nu moet nemen die je over twee jaar niet wilt terugdraaien. Dit artikel is de pre-migration assessment die CloudLabs uitvoert voordat de eerste VM verhuist.</p>
+
+        <div class="toc">
+          <div class="toc-title">In dit artikel</div>
+          <ol>
+            <li><a href="#nl-1">Waarom een pre-migration assessment het verschil maakt</a></li>
+            <li><a href="#nl-2">Stap 1, capacity en consolidatie-modellering</a></li>
+            <li><a href="#nl-3">Stap 2, network parity en VLAN-mapping</a></li>
+            <li><a href="#nl-4">Stap 3, storage assessment en CSV-ontwerp</a></li>
+            <li><a href="#nl-5">Stap 4, guest readiness en driver-strategie</a></li>
+            <li><a href="#nl-6">Stap 5, backup, DR en runbook-pariteit</a></li>
+            <li><a href="#nl-7">Stap 6, cutover-strategie en rollback-criteria</a></li>
+            <li><a href="#nl-8">De gereedschappen die werken in 2026</a></li>
+            <li><a href="#nl-9">Drie valkuilen die we steeds zien</a></li>
+          </ol>
+        </div>
+
+        <h2 id="nl-1">1. Waarom een pre-migration assessment het verschil maakt</h2>
+        <p>De meeste mislukte VMware naar Hyper-V migraties die wij achteraf onderzoeken zijn niet kapot omdat de conversie-tool faalde. Ze zijn kapot omdat het Hyper-V cluster niet klaar was: te weinig RAM-headroom voor N-1, een netwerk-topologie die VMware's port groups niet 1-op-1 kon afbeelden, of een backup-strategie die op vCenter-snapshots leunde en op Hyper-V niet werkt.</p>
+        <p>De assessment doet vier dingen die de migratie-tool zelf niet doet. Het modelleert capaciteit tegen werkelijke load, niet tegen toegewezen waardes. Het identificeert configuratiebeslissingen op de doelomgeving die per-VM eigenschappen moeten zijn vóór cutover. Het brengt operationele kennis-gaten in kaart (monitoring, patching, backup-procedures). En het schrijft een rollback-criteria-document zodat het migratie-team weet wanneer ze stoppen.</p>
+        <p>De assessment kost typisch vier tot zes werkdagen voor een omgeving tot 100 VM's, levert een go/no-go advies, en als het go is een gedetailleerd migratie-plan dat de migratie-fase ongeveer 30% versnelt door geëlimineerde herwerk. Voor klanten die er klaar voor zijn, en voor klanten waar het beter eerst nog twee maanden Hyper-V cluster-hardening kost.</p>
+
+        <h2 id="nl-2">2. Stap 1, capacity en consolidatie-modellering</h2>
+        <p>VMware en Hyper-V dimensioneren resources anders. Een vSphere VM met 8 vCPU en 32 GB RAM gebruikt zelden alle 8 vCPU's tegelijk, en VMware's CPU scheduler verbergt dat efficiënt. Wanneer je diezelfde VM verplaatst naar Hyper-V, krijg je dezelfde toewijzing maar zonder dezelfde scheduler-optimalisaties.</p>
+
+        <p><strong>Wat we werkelijk meten:</strong></p>
+        <ul>
+          <li><strong>CPU usage als percentage van toegewezen waardes</strong> over een periode van 30 dagen, niet pieken maar P95. Een VM met 8 vCPU's die P95 op 12% draait, kan op Hyper-V comfortabel met 4 vCPU's draaien, en geeft het cluster 50% meer consolidatie-ruimte.</li>
+          <li><strong>Actief geheugen-gebruik (working set)</strong>, niet toegewezen geheugen. VMware's memory ballooning maskeert overcommitment, Hyper-V's Dynamic Memory werkt anders. We modelleren consolidatie tegen werkelijke working set plus 20% headroom.</li>
+          <li><strong>Disk I/O patronen, gemiddeld en P99.</strong> Hyper-V op SAN-storage gedraagt zich anders dan VMware op vSAN, en sommige workloads (sterk metadata-zware Exchange, bepaalde database-engines) zijn gevoeliger voor CSV coordinator-load dan voor pure throughput.</li>
+          <li><strong>Netwerkverkeer per VM</strong>, niet alleen totalen. VM's met sterke oost-west traffic patronen profiteren van anti-affinity zodat ze niet op dezelfde host eindigen tijdens automatische balancing.</li>
+        </ul>
+
+        <p><strong>De N-1 vraag:</strong></p>
+        <p>Een vier-node cluster moet bij verlies van één node alle workloads kunnen blijven draaien. Dat betekent dat 75% van de fysieke capaciteit het 100% van de workload moet kunnen dragen, met genoeg RAM-headroom voor consolidatie. Wij modelleren dit expliciet en documenteren de uitkomst. Als de N-1 toestand boven 90% RAM-gebruik uitkomt, is er onvoldoende headroom en wordt het advies óf meer nodes, óf minder workloads per node, óf accepteren dat je in N-1 toestand geen Live Migration-headroom hebt.</p>
+
+        <h2 id="nl-3">3. Stap 2, network parity en VLAN-mapping</h2>
+        <p>VMware's port groups, distributed vSwitches, en NSX-segmenten moeten 1-op-1 worden afgebeeld op Hyper-V's virtuele switches, VLAN-tags, en eventueel SDN. Dit is meestal niet ingewikkeld, maar de catalogering moet exhaustief zijn vóór de migratie start.</p>
+        <p>Per port group documenteren we het VLAN-ID, de naamgevingsconventie die op Hyper-V gebruikt gaat worden, eventuele QoS-policies, en welke VM's eraan hangen. Voor distributed vSwitches met meerdere uplink-policies (LACP, failover-volgorde) bepalen we het Hyper-V equivalent: SET met dynamische load balancing, of een specifieke teaming-modus.</p>
+        <p>Voor klanten die NSX gebruiken voor microsegmentation, is dit het moment waarop de strategische keuze wordt gemaakt: Hyper-V Network Virtualization, Azure Arc-integratie met Azure Network Security Groups voor hybride scenarios, of accepteer dat microsegmentation post-migratie op een ander niveau (firewall, OS-level) wordt opgelost.</p>
+
+        <p><strong>Wat we vinden bij netwerkparity:</strong></p>
+        <ul>
+          <li>VMware-omgevingen met port groups die over de jaren heen "weesjes" zijn geworden, geen VM's meer aan, maar wel zorgvuldig gepland en gedocumenteerd. Migreren we die mee of laten we ze achter? Antwoord: laat achter, documenteer beslissing, voorkom dat een development-team over zes maanden vraagt waar VLAN 247 gebleven is.</li>
+          <li>VLAN-tagging die op vSphere op de port group niveau zit en op Hyper-V op de VM-NIC niveau moet. Klinkt triviaal, breekt elke keer dat het zonder pre-check wordt gedaan.</li>
+          <li>Promiscuous mode of MAC address changes die op vSphere zijn toegestaan voor specifieke security-tools, op Hyper-V moeten worden vertaald naar <code>Set-VMNetworkAdapter -MacAddressSpoofing On</code> per VM.</li>
+        </ul>
+
+        <h2 id="nl-4">4. Stap 3, storage assessment en CSV-ontwerp</h2>
+        <p>Het doel-Hyper-V cluster heeft CSV's, vSphere heeft VMFS datastores. De afbeelding is meestal niet 1-op-1, en dat is goed nieuws. Het is een kans om CSV-ontwerp opnieuw te doen op basis van wat je nu weet over de workloads.</p>
+
+        <p><strong>Onze CSV-ontwerprichtlijnen tijdens een pre-migration assessment:</strong></p>
+        <ul>
+          <li><strong>CSV's per workload-type, niet per VMware datastore.</strong> Eén CSV voor file-server VM's, één voor database-VM's, één voor algemene Windows Server VM's. Dit maakt latere capaciteits-planning, snapshot-strategie en performance-tuning per CSV mogelijk.</li>
+          <li><strong>Aantal CSV's gelijk aan of net boven het aantal nodes</strong>, voor automatische balancing. Op een vier-node cluster werkt vier tot zes CSV's beter dan twaalf, omdat de balancer dan makkelijker een gelijkmatige verdeling vindt. Zie <a href="csv-ownership-imbalance.html">CSV ownership onbalans</a> voor de gevolgen wanneer dit fout gaat.</li>
+          <li><strong>CSV-grootte rond 4 tot 8 TB</strong> voor SAN-attached clusters. Boven 10 TB worden volume-acties (chkdsk, backup-snapshot recovery) operationeel onhandelbaar.</li>
+          <li><strong>Anti-affinity en CSV-toewijzing samen plannen.</strong> Twee DC's op dezelfde CSV maar geforceerd op verschillende nodes, levert nog steeds een single-point-of-failure op de storage-laag. Documenteer beide.</li>
+        </ul>
+
+        <p><strong>Voor klanten met VMware vSAN die naar Hyper-V op SAN gaan:</strong></p>
+        <p>Een fundamentele architecturele keuze: vSAN was hyperconverged, SAN-attached Hyper-V is niet. De storage- en compute-paden zijn nu apart, MPIO en zoning komen weer in beeld, en backup-strategieën die op vSAN-snapshots leunden moeten herzien worden. Voor klanten die liever hyperconverged blijven, is <a href="azure-local-migration-readiness.html">Azure Local</a> een aanvullend traject met eigen readiness-assessment.</p>
+
+        <h2 id="nl-5">5. Stap 4, guest readiness en driver-strategie</h2>
+        <p>De VM's zelf moeten klaar zijn voor Hyper-V. De grootste valkuilen:</p>
+        <ul>
+          <li><strong>VMware Tools moet verwijderd worden vóór conversie</strong>, of de eerste boot op Hyper-V gaat de mist in. Op Windows-guests werkt dit meestal via een geplande verwijdering tijdens een onderhoudsvenster, of via een script dat post-conversie automatisch draait.</li>
+          <li><strong>Hyper-V Integration Services moet aanwezig en up-to-date zijn na conversie.</strong> Voor moderne Windows-versies (2016 en hoger) zit dit in het OS, voor oudere Linux-versies of legacy Windows-versies kan handmatige installatie nodig zijn.</li>
+          <li><strong>Generation 1 vs Generation 2 keuze.</strong> VMware VM's komen typisch als BIOS-boot binnen, wat Generation 1 op Hyper-V is. Voor moderne workloads met UEFI en Secure Boot wil je Generation 2, maar dat vereist een herinstallatie van de bootloader of in sommige gevallen een complete OS-herinstallatie. We adviseren: laat bestaande VM's als Gen 1 binnenkomen, plan Gen 2 als toekomstige modernisering, niet als migratie-blokker.</li>
+          <li><strong>Linux-VM's met kernel ouder dan 3.10</strong> of distributies zonder Hyper-V Linux Integration Services kunnen niet betrouwbaar gemigreerd worden zonder eerst de kernel of distributie te upgraden. Dit is op zichzelf een gerechtvaardigde reden om de VM in plaats van migratie te moderniseren.</li>
+        </ul>
+
+        <div class="callout"><strong>De Windows Server 2025 Hyper-V valkuil</strong>
+        Op Windows Server 2025 Hyper-V worden Windows Server 2012 R2 en 2016 guest-VM's niet meer ondersteund. Ze starten in sommige gevallen niet eens. Dit is de directe aanleiding voor klanten om hun OS-upgrade-strategie samen met de hypervisor-migratie te plannen, in plaats van als losse projecten.</div>
+
+        <div class="mid-cta">
+          <p>Een grondige pre-migration assessment voor een omgeving van 50 tot 100 VM's kost vier tot zes werkdagen en levert het verschil tussen een migratie die over budget en schema loopt, en een die op tijd opgeleverd wordt.</p>
+          <p>CloudLabs voert dit uit als opdracht met vaste scope, levert het rapport in Nederlands of Engels als klantgericht <code>.docx</code>, en bevat een gedetailleerd migratie-runbook plus rollback-criteria.</p>
+          <a href="../book.html">Plan een pre-migration assessment →</a>
+        </div>
+
+        <h2 id="nl-6">6. Stap 5, backup, DR en runbook-pariteit</h2>
+        <p>VMware-georiënteerde operations-teams hebben jaren aan procedurele kennis opgebouwd: hoe een snapshot terug te draaien, hoe vCenter-clusters te patchen zonder vMotion-stormen, hoe Site Recovery Manager te orkestreren. Die kennis is grotendeels niet overdraagbaar.</p>
+
+        <p><strong>Wat we tijdens de assessment vastleggen:</strong></p>
+        <ul>
+          <li><strong>Het bestaande backup-product</strong> en of het Hyper-V-bewust is. Veeam, Commvault, Cohesity en Rubrik ondersteunen Hyper-V allemaal volwassen, maar configuratie en best practices zijn anders dan op vSphere. Verwacht een licentiewijziging als de huidige licentie alleen vSphere dekt.</li>
+          <li><strong>CSV backup-modus.</strong> Hardware VSS provider vs software VSS, en welke impact dat heeft op backup-windows en CSV-coordinator load tijdens de backup. Dit is een onderwerp dat veel teams pas leren tijdens het eerste productie-incident, en het is de moeite waard om vóór cutover te toetsen.</li>
+          <li><strong>Disaster recovery.</strong> Hyper-V Replica, Azure Site Recovery, of derde-partij replicatie? VMware Site Recovery Manager heeft geen directe equivalent op Hyper-V, en het runbook moet opnieuw worden geschreven. CloudLabs levert een DR-runbook-template als onderdeel van de assessment.</li>
+          <li><strong>Monitoring.</strong> Welke alarmen op vSphere zijn er, en welke Hyper-V equivalenten bestaan? Veel SCOM management packs hebben de afgelopen jaren weinig aandacht gekregen, en moderne keuzes zijn Windows Admin Center plus Azure Arc, of derde-partij tools (PRTG, ManageEngine, Site24x7).</li>
+        </ul>
+
+        <h2 id="nl-7">7. Stap 6, cutover-strategie en rollback-criteria</h2>
+        <p>Het laatste deel van de assessment is een cutover-plan met expliciete rollback-criteria. Niet "we kijken hoe het loopt", maar "als deze drie dingen waar zijn, draaien we terug naar vSphere".</p>
+
+        <p><strong>De rollback-trigger-set die wij standaard hanteren:</strong></p>
+        <ul>
+          <li>Een gemigreerde VM start niet binnen 30 minuten na cutover en heeft geen werkende remediation binnen 2 uur. Terug naar bron.</li>
+          <li>P99 latency op een gemigreerde productie-workload is meer dan 2x slechter dan op vSphere, 72 uur na cutover. Terug naar bron tenzij oorzaak gevonden en oplossing aantoonbaar werkt.</li>
+          <li>Authenticatie of Active Directory-issues die meer dan 5% van de gebruikers raken en niet binnen het eerste onderhoudsvenster zijn opgelost. Terug naar bron.</li>
+        </ul>
+
+        <p><strong>Cutover-volgorde:</strong></p>
+        <ol>
+          <li>Begin met dev/test-VM's en niet-kritieke productie. Ervaring opbouwen, scripts valideren, runbooks bijschaven. Geen kritieke workload mag in de eerste batch zitten.</li>
+          <li>Daarna stateless productie: web-tier servers, applicatie-tier zonder lokale state. Cutover-tijd per VM is laag, rollback is goedkoop.</li>
+          <li>Tot slot stateful productie: databases, fileservers, identity. Dit is waar de meeste pre-cutover validatie en de meeste rollback-zorgen zitten. Plan ruime maintenance windows, en plan ook reservedagen voor onverwachte issues.</li>
+        </ol>
+
+        <p>VMware vCenter zelf decommissioneren is de laatste stap, niet de eerste. Een working vCenter naast het Hyper-V cluster voor zes weken na de laatste VM-migratie is goedkope verzekering, en wij adviseren het standaard.</p>
+
+        <h2 id="nl-8">8. De gereedschappen die werken in 2026</h2>
+        <p><strong>Microsoft Windows Admin Center VM Conversion Extension</strong> (preview op het moment van schrijven). Online migratie met minimale downtime, gratis bij Windows Admin Center. Ondersteunt Windows en moderne Linux-distributies. Vooral geschikt voor batches tot enkele tientallen VM's. Voor grotere migraties hebben we in productie betere resultaten gezien met SCVMM of Veeam.</p>
+        <p><strong>System Center VMM 2025.</strong> Enterprise-schaal VMware-naar-Hyper-V conversie, tot 4x sneller dan eerdere versies. Vereist offline VM-conversie (bron-VM moet uit staan), dus de cutover-windows zijn langer. Het juiste gereedschap voor grote migraties (honderden VM's) waar batching en orkestratie belangrijker zijn dan downtime per VM.</p>
+        <p><strong>Veeam Backup &amp; Replication.</strong> Restore een vSphere-backup direct naar Hyper-V. Werkt onafhankelijk van conversie-tools, maakt rollback eenvoudiger (de bron blijft intact), en past goed bij omgevingen die Veeam al voor backup gebruiken. Vanaf Veeam 12.x is de Hyper-V target-ondersteuning volwassen.</p>
+        <p><strong>PowerShell met <code>Convert-VHD</code> plus handmatige hookup.</strong> Voor low-volume migraties en alles wat zich niet leent voor de bovenstaande tools. Wij scripten dit standaard mee in CloudLabs migratie-opdrachten voor batch-VM's en dev/test-omgevingen.</p>
+        <p><strong>Microsoft Virtual Machine Converter (MVMC)</strong> is end-of-life en niet meer ondersteund. Niet gebruiken voor nieuwe migraties, ongeacht hoeveel oude blogposts er nog naar verwijzen.</p>
+
+        <h2 id="nl-9">9. Drie valkuilen die we steeds zien</h2>
+        <ol>
+          <li><strong>Onderschatting van guest OS-upgrade-werk.</strong> Klanten plannen de hypervisor-migratie alsof het puur infrastructuur is, maar Windows Server 2012 R2 en 2016 worden niet ondersteund op Windows Server 2025 Hyper-V. De OS-upgrade zit in 30 tot 60% van de VM's en moet in de migratie-planning.</li>
+          <li><strong>Backup-licentie niet gechecked vóór cutover.</strong> Veeam, Commvault en anderen rekenen vaak per workload-type. Een licentie die alleen vSphere dekt, dekt geen Hyper-V. Klanten ontdekken dit drie dagen vóór de eerste cutover, en moeten dan een procurement-cyclus van vier weken doorlopen.</li>
+          <li><strong>Geen budget voor twee maanden parallel draaien.</strong> vCenter en de oude VMware-licentie blijven actief tot na de laatste VM-migratie, plus enkele weken voor rollback-veiligheid. Dat is in totaal 2 tot 4 maanden dubbele licentiekosten. Reken het mee in de business case.</li>
+        </ol>
+
+        <h2>De CloudLabs aanpak</h2>
+        <p>Een pre-migration assessment loopt als opdracht met vaste scope, vier tot zes werkdagen voor omgevingen tot 100 VM's. De oplevering bevat een capaciteits-model, een gedetailleerd migratie-plan per VM-batch, een go/no-go-advies, en de rollback-criteria.</p>
+        <p>Voor klanten die geen interne capaciteit hebben voor de migratie zelf, doen wij ook de uitvoering. Voor klanten die zelf willen migreren, leveren we het runbook en blijven we beschikbaar voor escalaties tijdens cutover-vensters.</p>
+        <p><a href="../book.html"><strong>Plan een VMware naar Hyper-V pre-migration assessment →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Veelgestelde vragen</h2>
+
+          <div class="faq-q">Hoe lang duurt een typische VMware naar Hyper-V migratie?</div>
+          <p>Voor 50 tot 100 VM's typisch drie tot vier maanden, inclusief assessment (4 tot 6 weken), migratie-uitvoering (8 tot 12 weken in batches), en post-migratie validatie. Grotere omgevingen (500+) lopen 9 tot 18 maanden, afhankelijk van workload-complexiteit en cutover-window-beschikbaarheid.</p>
+
+          <div class="faq-q">Kan ik een geleidelijke migratie doen, of moet het in één big-bang?</div>
+          <p>Geleidelijk werkt vrijwel altijd beter. Big-bang migraties zien wij alleen in zeer specifieke gevallen (datacenter-verhuizing, hardware-end-of-life met harde deadline). Een gefaseerde aanpak per workload-cluster geeft je tijd om scripts en runbooks te verfijnen op laagrisico-VM's voordat je kritieke workloads aanraakt.</p>
+
+          <div class="faq-q">Wat doen we met VMware NSX microsegmentation?</div>
+          <p>Vier opties. Hyper-V Network Virtualization (technisch volwassen, weinig in productie), Azure Arc plus Azure Network Security Groups voor hybride scenarios, derde-partij microsegmentation-tools (Illumio, Akamai Guardicore), of accepteer dat microsegmentation post-migratie op een ander niveau (firewall, OS-level) wordt opgelost. Welke keuze het juiste is hangt af van regulatory eisen en wat het netwerk-team kan operationaliseren.</p>
+
+          <div class="faq-q">Werkt Live Migration tussen vSphere en Hyper-V tijdens de transitie?</div>
+          <p>Nee. Cross-hypervisor live migration bestaat niet. Wat wel werkt is parallel draaien tijdens cutover-windows en VM's één voor één overzetten met geplande downtime. De WAC VM Conversion Extension biedt "online migration" maar dat is replicatie plus cutover, niet vMotion-stijl live migration.</p>
+
+          <div class="faq-q">Hebben jullie ervaring met VMware naar Hyper-V voor grote omgevingen?</div>
+          <p>Ja. CloudLabs heeft VMware-naar-Hyper-V migraties geleid voor klanten met 50 tot 800 VM's. De aanpak schaalt; het is wel zo dat de assessment-fase langer wordt en de cutover-windows complexer. Voor omgevingen boven 500 VM's adviseren we een tooling-keuze van SCVMM 2025 of Veeam, niet de WAC extension.</p>
+        </div>
+      </div>
+
+      <div class="related">
+        <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
+        <ul>
+          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
+          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
+          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership onbalans, oorzaken en oplossingen</span></a></li>
+          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
+    <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.3.3</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+</body>
+</html>

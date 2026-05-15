@@ -1,0 +1,579 @@
+<!doctype html>
+<!-- CloudLabs · v0.3.3 · Blog · Azure Local Migration Readiness -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="../favicon.png" type="image/png">
+<title>Azure Local Migration Readiness Checklist: What's Different in 2026 · CloudLabs</title>
+<meta name="description" content="The Azure Local migration readiness checklist for 2026: hardware compatibility, RDMA networking, Entra ID, licensing, operational shift, gotchas. From the CloudLabs Readiness Assessment playbook.">
+<link rel="canonical" href="https://cldlbs.com/blog/azure-local-migration-readiness.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/azure-local-migration-readiness.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/azure-local-migration-readiness.html">
+<link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/azure-local-migration-readiness.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cldlbs.com/blog/azure-local-migration-readiness.html">
+<meta property="og:title" content="Azure Local Migration Readiness Checklist: What's Different in 2026">
+<meta property="og:description" content="The Azure Local migration readiness checklist for 2026 — by CloudLabs.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<meta property="article:published_time" content="2026-05-15">
+<meta property="article:author" content="Hans Vredevoort">
+<meta property="article:section" content="Azure Local">
+<meta property="article:tag" content="Azure Local">
+<meta property="article:tag" content="Azure Stack HCI">
+<meta property="article:tag" content="Migration">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BlogPosting",
+  "headline":"Azure Local Migration Readiness Checklist: What's Different in 2026",
+  "description":"The Azure Local migration readiness checklist for 2026: hardware compatibility, RDMA networking, Entra ID, licensing, operational shift, gotchas. From the CloudLabs Readiness Assessment playbook.",
+  "image":"https://cldlbs.com/images/cluster.jpg",
+  "datePublished":"2026-05-15",
+  "dateModified":"2026-05-15",
+  "author":{"@type":"Person","name":"Hans Vredevoort","url":"https://cldlbs.com/about.html","jobTitle":"Hyper-V & Cluster Consultant","worksFor":{"@type":"Organization","name":"CloudLabs"}},
+  "publisher":{"@type":"Organization","name":"CloudLabs","url":"https://cldlbs.com/","logo":{"@type":"ImageObject","url":"https://cldlbs.com/favicon.png"}},
+  "mainEntityOfPage":{"@type":"WebPage","@id":"https://cldlbs.com/blog/azure-local-migration-readiness.html"},
+  "articleSection":"Azure Local",
+  "keywords":"Azure Local, Azure Stack HCI, Hyper-V, Migration, Readiness, S2D, RDMA, Entra ID, 2026"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://cldlbs.com/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://cldlbs.com/blog.html"},
+    {"@type":"ListItem","position":3,"name":"Azure Local Migration Readiness","item":"https://cldlbs.com/blog/azure-local-migration-readiness.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"What is the difference between Azure Stack HCI and Azure Local?",
+      "acceptedAnswer":{"@type":"Answer","text":"Azure Local is the new name since late 2024 for what was previously called Azure Stack HCI. It is the same product, with broadened scope (now including edge and smaller deployments) and clearer positioning inside Microsoft's Arc strategy. Existing Azure Stack HCI 22H2 clusters can in-place upgrade to Azure Local 23H2 and higher."}
+    },
+    {
+      "@type":"Question",
+      "name":"Do I need to replace my entire Hyper-V cluster to move to Azure Local?",
+      "acceptedAnswer":{"@type":"Answer","text":"Yes. There is no in-place upgrade from Windows Server Hyper-V to Azure Local. You build a new cluster on validated hardware and migrate workloads to it."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does Azure Local work without constant Azure connectivity?",
+      "acceptedAnswer":{"@type":"Answer","text":"Up to 30 days of disconnected operation is supported. Beyond that, the cluster stops billing through Azure and connectivity must be restored. For strictly air-gapped environments, Azure Local is not the right choice."}
+    },
+    {
+      "@type":"Question",
+      "name":"Can I keep using my existing VMM for Azure Local?",
+      "acceptedAnswer":{"@type":"Answer","text":"To a limited extent. SCVMM 2025 supports management of Azure Local clusters, but the Arc portal is the primary interface per Microsoft's roadmap. For customers with a heavy existing VMM investment, both run side by side during the transition."}
+    },
+    {
+      "@type":"Question",
+      "name":"What does a typical four-node Azure Local deployment cost for the OS itself?",
+      "acceptedAnswer":{"@type":"Answer","text":"Per-core, per-month pricing varies by region. For a four-node cluster with 32 cores per node, the OS component usually lands in the low thousands of euros per month, excluding Azure service consumption and excluding Windows Server licenses for the guests. Model with the Azure pricing calculator and with actual log volumes from a comparable existing environment."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .article{max-width:75ch;margin-top:8px}
+  .article .breadcrumb{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:18px}
+  .article .breadcrumb a{color:var(--ink-dim);text-decoration:none}
+  .article .breadcrumb a:hover{color:var(--cyan)}
+  .article h1{font-size:clamp(24px,4.4vw,36px);font-weight:600;line-height:1.2;margin:0 0 14px}
+  .article .meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:28px}
+  .article .lede{font-size:17px;line-height:1.6;color:var(--ink-dim);margin-bottom:18px}
+  .article h2{font-size:21px;font-weight:600;line-height:1.3;margin:40px 0 14px;color:var(--ink)}
+  .article h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+  .article p{font-size:15px;line-height:1.7;color:var(--ink-dim);margin:0 0 14px}
+  .article ul,.article ol{font-size:15px;line-height:1.7;color:var(--ink-dim);padding-left:22px;margin:0 0 14px}
+  .article li{margin-bottom:6px}
+  .article a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .article strong{color:var(--ink)}
+  .article code{font-family:var(--mono);font-size:13px;background:rgba(95,227,255,.08);color:var(--cyan);padding:1px 6px;border-radius:4px}
+  .article pre{background:rgba(15,24,50,.7);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink);margin:0 0 18px;line-height:1.55}
+  .article pre code{background:none;color:inherit;padding:0}
+  .article blockquote{border-left:2px solid var(--cyan);padding:6px 18px;margin:18px 0;color:var(--ink);font-style:italic;background:rgba(95,227,255,.04)}
+  .article table{width:100%;border-collapse:collapse;margin:14px 0 22px;font-size:14px}
+  .article th,.article td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);color:var(--ink-dim);vertical-align:top}
+  .article th{color:var(--ink);font-weight:600;background:rgba(255,255,255,.02)}
+  .callout{border:1px solid var(--line-strong);border-radius:10px;padding:14px 18px;margin:18px 0;background:rgba(95,227,255,.04)}
+  .callout strong{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .mid-cta{border:1px solid var(--cyan);border-radius:12px;padding:22px 24px;margin:32px 0;background:linear-gradient(135deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .mid-cta .label{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:8px}
+  .mid-cta p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 12px}
+  .mid-cta a{color:var(--cyan);font-weight:600;font-size:15px;text-decoration:none;border-bottom:0;display:inline-flex;align-items:center;gap:6px}
+  .mid-cta a:hover{color:var(--ink)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 28px;background:rgba(255,255,255,.02)}
+  .toc-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .toc ol{padding-left:20px;margin:0;font-size:14px;line-height:1.7}
+  .toc a{color:var(--ink-dim);text-decoration:none;border-bottom:0}
+  .toc a:hover{color:var(--cyan)}
+  .checklist{list-style:none;padding-left:0}
+  .checklist li{padding-left:28px;position:relative;margin-bottom:8px}
+  .checklist li::before{content:'☐';position:absolute;left:0;color:var(--cyan);font-size:18px;line-height:1.2}
+  .faq-block{margin-top:40px}
+  .faq-block h2{margin-bottom:18px}
+  .faq-q{font-size:16px;font-weight:600;color:var(--ink);margin:18px 0 6px}
+  .related{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+  .related h3{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .related ul{list-style:none;padding:0;margin:0}
+  .related li{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="../index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="../index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="../services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="../method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="../findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="../engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="../about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="../book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="../faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="../blog.html" aria-current="page"><span class="n">09</span><span lang="en">Blog</span><span lang="nl">Blog</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <article class="article">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../index.html"><span lang="en">Home</span><span lang="nl">Home</span></a> ·
+        <a href="../blog.html">Blog</a> ·
+        <span lang="en">Azure Local Migration Readiness Checklist</span>
+        <span lang="nl">Azure Local migratie readiness checklist</span>
+      </nav>
+
+      <!-- ============= ENGLISH ============= -->
+      <div lang="en">
+        <h1>Azure Local Migration Readiness Checklist: What's Different in 2026</h1>
+        <div class="meta">By Hans Vredevoort · 15 May 2026 · 16 minute read · Azure Local</div>
+
+        <p class="lede">Azure Local is Microsoft's current name for the operating system formerly known as Azure Stack HCI. A hyperconverged Windows platform managed through Azure Arc, billed per core per month, and intended for production workloads that must stay on-premises. For customers looking to leave VMware or replace an aging Hyper-V cluster, Azure Local sits prominently on the shortlist. Justifiably.</p>
+        <p class="lede">But migrating from traditional Hyper-V clusters or from older Azure Stack HCI versions is technically not rocket science. The readiness gap breaks more projects than the migration itself. Solution-catalog mismatches, switches without DCB, Entra ID tenant choices that cannot be undone after the fact, and cost models that look fine on paper but come in three times higher in production.</p>
+        <p class="lede">This checklist is what CloudLabs walks through in an Azure Local Readiness Assessment, in the order that actually matters. Not the marketing order, the order in which you hit problems.</p>
+
+        <div class="toc">
+          <div class="toc-title">In this article</div>
+          <ol>
+            <li><a href="#en-1">First decision: is Azure Local the right target?</a></li>
+            <li><a href="#en-2">Hardware compatibility, the non-negotiable part</a></li>
+            <li><a href="#en-3">Network architecture and RDMA</a></li>
+            <li><a href="#en-4">Identity: Entra ID, AD, and the new cluster identity model</a></li>
+            <li><a href="#en-5">Licensing and cost reality</a></li>
+            <li><a href="#en-6">The operational shift: Arc-managed everything</a></li>
+            <li><a href="#en-7">Migration paths from Hyper-V and Azure Stack HCI</a></li>
+            <li><a href="#en-8">Five gotchas we keep running into</a></li>
+            <li><a href="#en-9">The pre-migration checklist</a></li>
+          </ol>
+        </div>
+
+        <h2 id="en-1">1. First decision: is Azure Local the right target?</h2>
+        <p>Azure Local is not a free upgrade path for every Hyper-V cluster. It is the right answer for hyperconverged storage with S2D, Arc-native operations, integration with Azure services (Site Recovery, Backup, AKS on Azure Local), and clear alignment with Microsoft's current direction. It is the wrong answer for a small two-node cluster on shared SAN, a workload mix that does not justify per-core licensing, or hard policy constraints that block Azure connectivity.</p>
+        <p>CloudLabs starts every Azure Local Readiness Assessment with that question. If the answer is "we are better off staying on Windows Server with Failover Clustering and Hyper-V," that is a legitimate outcome, and one we have documented for multiple customers where the per-core economics did not work out.</p>
+
+        <div class="callout"><strong>Quick rule of thumb</strong>
+        Azure Local makes sense at three or more nodes, with workloads that benefit from S2D, and an organisation already running other workloads in Azure. Below that line, Windows Server with traditional storage is often still the better choice. A SAN-attached Hyper-V cluster build is not old-fashioned in 2026, it is a rational choice.</div>
+
+        <h2 id="en-2">2. Hardware compatibility, the non-negotiable part</h2>
+        <p>Azure Local only runs on hardware from the Azure Local Solutions Catalog. Not the Windows Server HCL, the Azure Local catalog. This is the single biggest source of derailed projects we see. A server that worked perfectly under Windows Server 2022 and Failover Clustering sometimes is not on the Azure Local catalog at all, or only at a specific firmware level with a specific NIC.</p>
+
+        <p><strong>What to verify, in this order:</strong></p>
+        <p><strong>Chassis plus CPU plus drive bay configuration</strong> must match a validated solution from Dell, HPE, Lenovo, Supermicro, or another OEM in the Azure Local catalog. "Nearly the same" does not count. The cluster deploys, but you lose support and you do not receive solution updates.</p>
+        <p><strong>NICs must be RDMA-capable</strong> for the storage network. RoCEv2 (Mellanox/NVIDIA ConnectX-4 or newer, Broadcom NetXtreme-E) or iWARP (Chelsio T5/T6, some Intel X722). The catalog lists supported part numbers per solution. A ConnectX-5 valid in one solution is not automatically valid in another.</p>
+        <p><strong>Drives must be all-NVMe, all-SSD, or a hybrid explicitly validated</strong> for that chassis. Mixing SSD vendors within a node is fine, mixing capacities within a tier asks for uneven wear and unpredictable capacity planning.</p>
+        <p><strong>TPM 2.0 and Secure Boot</strong> are mandatory. Nearly all modern hardware has both, but BIOS settings must be explicitly verified. On refurbished hardware, TPM is regularly disabled.</p>
+        <p><strong>Solution firmware baseline.</strong> Each OEM publishes one, and you must match it before deployment. Afterwards updates run through Azure Update Manager. A deviating BIOS or NIC firmware version on a single node breaks the first Update Run.</p>
+
+        <h2 id="en-3">3. Network architecture and RDMA</h2>
+        <p>Azure Local has strong opinions about network topology. The reference design is two switches, two NIC ports per node for storage with RDMA, two NIC ports for management and compute. Network ATC (Automatic Cluster Networking) is the recommended automation layer, it generates the entire SET / vSwitch / QoS configuration from a high-level intent.</p>
+
+        <p>The non-negotiables:</p>
+        <ul>
+          <li><strong>Storage network must use RDMA</strong> (RoCEv2 or iWARP) with DCB and PFC configured switch-side. For RoCEv2 that means at minimum PFC on priority 3 and ETS on priority 3 with a guaranteed bandwidth percentage. Switches without DCB support cannot be used for production-grade Azure Local.</li>
+          <li><strong>Storage network must be isolated</strong>, separate VLAN, separate physical NIC ports from management. Combining storage traffic with management is supported in some topologies but always reduces resilience.</li>
+          <li><strong>Minimum 10 GbE</strong> for the smallest production deployments, 25 GbE is the practical floor for serious workloads. 100 GbE is normal at the larger end. We rarely see new deployments below 25 GbE in 2026.</li>
+          <li><strong>Switches must support DCB.</strong> Many older datacenter switches do, but switch firmware must be explicitly verified. Cisco Nexus 9K, Arista 7050, Dell Z9264F, and Mellanox SN3700 are practical choices we frequently see working.</li>
+        </ul>
+
+        <p>Test it before you commit:</p>
+<pre><code># Verify that RDMA actually works between two candidate nodes
+Test-RDMA -PfcEnabled $true -IfIndex (Get-NetAdapter 'Storage1').ifIndex `
+    -RemoteIpAddress 10.20.0.12
+
+# Check negotiated speed and RDMA capability on each cluster NIC
+Get-NetAdapterRdma | Select-Object Name, Enabled
+Get-NetAdapter | Select-Object Name, Status, LinkSpeed, MediaType</code></pre>
+
+        <p>If RDMA does not pass this test, the project stops here until the switch side is fixed. Proceeding and "sorting it out later" is in practice a guarantee for performance issues that stay hidden until after go-live.</p>
+
+        <h2 id="en-4">4. Identity: Entra ID, AD, and the new cluster identity model</h2>
+        <p>This is where many existing Hyper-V administrators get caught off guard. Azure Local nodes are domain-joined to your on-premises Active Directory <em>and</em> registered in Microsoft Entra ID for Arc management. The cluster has its own Entra ID service principal, and several Azure RBAC roles must be assigned correctly before deployment can even start.</p>
+
+        <p><strong>Pre-deployment identity checklist:</strong></p>
+        <ul>
+          <li>A <strong>dedicated OU in Active Directory</strong> for the Azure Local cluster, with inheritance blocked and Group Policy filtered. Not blocking inheritance is the most common reason a successful deployment breaks after the first GPO refresh.</li>
+          <li>A <strong>deployment user account</strong> with local admin rights on all nodes and permission to create computer objects in that OU.</li>
+          <li>An <strong>Entra ID tenant</strong> in which the cluster is registered. For multi-tenant organisations: decide this beforehand. Changing it after the fact is not easy.</li>
+          <li>An <strong>Azure subscription</strong> in the same Entra tenant, with resource providers <code>Microsoft.AzureStackHCI</code>, <code>Microsoft.HybridConnectivity</code>, and <code>Microsoft.Kubernetes</code> registered.</li>
+          <li><strong>Azure RBAC roles</strong> on that subscription: <em>Azure Connected Machine Onboarding</em>, <em>Azure Stack HCI Administrator</em>, and a Reader role at the resource group level for the cluster identity.</li>
+        </ul>
+
+        <h2 id="en-5">5. Licensing and cost reality</h2>
+        <p>Azure Local is billed per physical core per month through your Azure subscription. There is no perpetual license for the OS itself. Guest workloads are licensed separately. Windows Server VMs are usually covered by Windows Server Datacenter with Software Assurance, or by Azure Hybrid Benefit.</p>
+
+        <table>
+          <thead>
+            <tr><th>Cost component</th><th>Model</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Azure Local OS</td><td>Per physical core, per month</td><td>Through Azure subscription, no perpetual option</td></tr>
+            <tr><td>Windows Server guests</td><td>Datacenter SA or AHB</td><td>Unlimited Windows VMs on the node with Datacenter</td></tr>
+            <tr><td>Azure services (Arc, Monitor, Defender)</td><td>Consumption</td><td>Optional but expected in most deployments</td></tr>
+            <tr><td>Hardware</td><td>CapEx</td><td>Solution pricing varies per OEM</td></tr>
+            <tr><td>Egress / connectivity</td><td>Variable</td><td>Material in Backup and Site Recovery scenarios</td></tr>
+          </tbody>
+        </table>
+
+        <p>For a four-node cluster with 32 cores per node and existing Datacenter SA, the uplift over Windows Server is dominated by the per-core OS fee and Azure service consumption. Model it before committing. In our engagements we regularly see Azure Monitor and Log Analytics consumption come in three times higher in steady state than estimated during deployment.</p>
+
+        <div class="mid-cta">
+          <span class="label">Pause</span>
+          <p>The four sections above (hardware, network, identity, licensing) determine whether an Azure Local project is even feasible. The three sections below determine whether it is operationally sustainable.</p>
+          <p>Not sure if your environment is ready? An Azure Local Readiness Assessment from CloudLabs delivers a go/no-go recommendation with explicit trade-offs in five working days, as a customer-facing <code>.docx</code> report.</p>
+          <a href="../book.html">Schedule an Azure Local Readiness Assessment →</a>
+        </div>
+
+        <h2 id="en-6">6. The operational shift: Arc-managed everything</h2>
+        <p>The biggest non-technical shift is operational. Day-2 management of Azure Local runs primarily through Azure Portal, Azure Arc, and Azure Update Manager. Failover Cluster Manager still works, but is not the primary interface. PowerShell remains fully supported and is what we use for nearly everything during a CloudLabs engagement.</p>
+
+        <p>What changes in daily operations:</p>
+        <ul>
+          <li><strong>Patching</strong> moves to Azure Update Manager. You schedule update runs from the portal, the system patches OS, firmware, drivers, and solution components in one coordinated run. No more <code>Invoke-CauRun</code>, no more manual firmware flashes per node during a maintenance window.</li>
+          <li><strong>Monitoring</strong> through Azure Monitor and Insights for Azure Local. Existing SCOM or third-party tooling can stay, but the first-party experience lives in Azure. For organisations with heavy on-premises monitoring investments, this is a double bill during the transition period.</li>
+          <li><strong>VM management</strong> shifts toward Arc-enabled VMs and the Azure portal. Hyper-V Manager and Failover Cluster Manager still work, but the new lifecycle (provisioning, backup, replication) is portal-driven. Administrators who did everything through PowerShell or WAC gain an additional interface.</li>
+          <li><strong>Backup</strong> through Azure Backup for Azure Local, or third-party tools that have explicitly added Azure Local support. Veeam, Commvault, and Cohesity all do at the time of writing. An existing Veeam deployment continues to work, but must be updated to an Azure Local-aware version.</li>
+        </ul>
+
+        <h2 id="en-7">7. Migration paths from Hyper-V and Azure Stack HCI</h2>
+        <p>There is no in-place upgrade from Windows Server Hyper-V to Azure Local. You build a new cluster, migrate workloads to it, and decommission the old one. From Azure Stack HCI 22H2 there is an in-place upgrade path to Azure Local 23H2 and higher, with prerequisites that require careful checking.</p>
+
+        <p>Migration options for workloads, in order of decreasing preference for most production VMs:</p>
+        <ul>
+          <li><strong>Hyper-V Replica</strong> works between Hyper-V and Azure Local as long as Hyper-V Replica is configured. Cutover requires a brief outage (typically under a minute per VM), and you can schedule batches during a maintenance window.</li>
+          <li><strong>Storage Migration Service</strong> for fileserver roles. Specifically for file data, not for general VM workloads.</li>
+          <li><strong>Backup-and-restore</strong> through Azure Site Recovery, Veeam, or Commvault. The slowest option, but workable for large environments with strict cutover windows where Hyper-V Replica is not an option.</li>
+          <li><strong>VHD copy plus register.</strong> Manual, scriptable, works fine for low-importance VMs. Acceptable for batch workloads, dev/test, and anything that can tolerate a few hours of downtime. We script this as a standard option in CloudLabs migration engagements.</li>
+        </ul>
+
+        <h2 id="en-8">8. Five gotchas we keep running into</h2>
+        <ol>
+          <li><strong>NICs that are RoCE-capable but not on the solution NIC list.</strong> Solution validation is per part number, not per capability. A ConnectX-6 that works fine elsewhere is not automatically valid in your specific solution.</li>
+          <li><strong>Switches without DCB on the storage VLAN.</strong> The cluster deploys and runs, performance is silently degraded. We still see this with DCB-configured switches where the configuration only exists on management ports, not on the ports facing the Azure Local nodes.</li>
+          <li><strong>OU inheritance not blocked.</strong> Group Policy then breaks the deployment in subtle ways after the first patch cycle. Symptom: cluster works, Arc registration works, after a week Update Runs fail with access-denied errors that nobody can find a logical cause for.</li>
+          <li><strong>Entra ID tenant mismatch.</strong> Cluster registered in one tenant, subscription in another. Moving is painful and in some scenarios requires redeploying the cluster.</li>
+          <li><strong>Cost surprise on egress and Azure Monitor data.</strong> Estimated from deployment data volumes, reality is three times that in steady state. Model costs based on actual log volumes from an existing Hyper-V cluster, not on Microsoft's calculator defaults.</li>
+        </ol>
+
+        <h2 id="en-9">9. The pre-migration checklist</h2>
+        <p>CloudLabs delivers this as a customer-facing <code>.docx</code> after an Azure Local Readiness Assessment. The short version:</p>
+
+        <ul class="checklist">
+          <li>Validated solution selected from the Azure Local Solutions Catalog</li>
+          <li>Firmware baseline matched on all nodes</li>
+          <li>TPM 2.0 and Secure Boot verified in BIOS on every node</li>
+          <li>RDMA tested end to end between all nodes on the storage VLAN</li>
+          <li>DCB and PFC configured on all storage switches</li>
+          <li>Dedicated OU in AD with inheritance blocked</li>
+          <li>Deployment user with required AD permissions</li>
+          <li>Entra ID tenant decision documented</li>
+          <li>Azure subscription with required resource providers registered</li>
+          <li>Azure RBAC roles assigned</li>
+          <li>Licensing model decided and budgeted including Azure Monitor consumption</li>
+          <li>Backup product validated for Azure Local</li>
+          <li>Monitoring stack decided (Azure Monitor only or hybrid)</li>
+          <li>Migration approach per workload documented</li>
+          <li>Cutover windows per workload group scheduled</li>
+          <li>Rollback procedure written and reviewed</li>
+        </ul>
+
+        <p>A CloudLabs Azure Local Readiness Assessment runs as a fixed-scope engagement, delivers a readiness report in English or Dutch, and includes a written go/no-go recommendation with explicit trade-offs. For customers who are ready, for customers who are better off waiting, and for customers where the answer lands somewhere in between.</p>
+        <p><a href="../book.html"><strong>Schedule an Azure Local Readiness Assessment →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Frequently asked questions</h2>
+
+          <div class="faq-q">What is the difference between Azure Stack HCI and Azure Local?</div>
+          <p>Azure Local is the new name since late 2024 for what was previously called Azure Stack HCI. It is the same product, with broadened scope (now including edge and smaller deployments) and clearer positioning inside Microsoft's Arc strategy. Existing Azure Stack HCI 22H2 clusters can in-place upgrade to Azure Local 23H2 and higher.</p>
+
+          <div class="faq-q">Do I need to replace my entire Hyper-V cluster to move to Azure Local?</div>
+          <p>Yes. There is no in-place upgrade from Windows Server Hyper-V to Azure Local. You build a new cluster on validated hardware and migrate workloads to it.</p>
+
+          <div class="faq-q">Does Azure Local work without constant Azure connectivity?</div>
+          <p>Up to 30 days of disconnected operation is supported. Beyond that, the cluster stops billing through Azure and connectivity must be restored. For strictly air-gapped environments, Azure Local is not the right choice.</p>
+
+          <div class="faq-q">Can I keep using my existing VMM for Azure Local?</div>
+          <p>To a limited extent. SCVMM 2025 supports management of Azure Local clusters, but the Arc portal is the primary interface per Microsoft's roadmap. For customers with a heavy existing VMM investment, both run side by side during the transition.</p>
+
+          <div class="faq-q">What does a typical four-node Azure Local deployment cost for the OS itself?</div>
+          <p>Per-core, per-month pricing varies by region. For a four-node cluster with 32 cores per node, the OS component usually lands in the low thousands of euros per month, excluding Azure service consumption and excluding Windows Server licenses for the guests. Model with the Azure pricing calculator and with actual log volumes from a comparable existing environment.</p>
+        </div>
+      </div>
+
+      <!-- ============= DUTCH ============= -->
+      <div lang="nl">
+        <h1>Azure Local migratie readiness checklist: wat 2026 anders maakt</h1>
+        <div class="meta">Door Hans Vredevoort · 15 mei 2026 · 16 minuten leestijd · Azure Local</div>
+
+        <p class="lede">Azure Local is Microsofts huidige naam voor het besturingssysteem dat eerder Azure Stack HCI heette. Een hyperconverged Windows-platform beheerd via Azure Arc, gefactureerd per core per maand, en bedoeld voor productie-workloads die on-premises moeten blijven. Voor klanten die uit hun VMware-omgeving willen of een verouderd Hyper-V cluster vervangen, staat Azure Local opvallend hoog op de optielijst. Terecht.</p>
+        <p class="lede">Maar migreren vanuit traditionele Hyper-V clusters of vanaf oudere Azure Stack HCI-versies is technisch geen rocket science. De readiness-gap maakt meer projecten kapot dan de migratie zelf. Solution-catalog mismatches, switches zonder DCB, Entra ID tenant-keuzes die achteraf niet terug te draaien zijn, en kostenmodellen die op papier kloppen maar in productie 3x duurder uitvallen.</p>
+        <p class="lede">Deze checklist is wat CloudLabs in een Azure Local Readiness Assessment doorloopt, in de volgorde die er werkelijk toe doet. Niet de marketing-volgorde, maar de volgorde waarin je problemen tegenkomt.</p>
+
+        <div class="toc">
+          <div class="toc-title">In dit artikel</div>
+          <ol>
+            <li><a href="#nl-1">Eerste beslissing: is Azure Local het juiste doel?</a></li>
+            <li><a href="#nl-2">Hardware compatibiliteit, het niet-onderhandelbare deel</a></li>
+            <li><a href="#nl-3">Netwerkarchitectuur en RDMA</a></li>
+            <li><a href="#nl-4">Identity: Entra ID, AD en het nieuwe cluster-identiteitsmodel</a></li>
+            <li><a href="#nl-5">Licensing en kosten-realiteit</a></li>
+            <li><a href="#nl-6">De operationele shift: Arc-managed everything</a></li>
+            <li><a href="#nl-7">Migratiepaden vanuit Hyper-V en Azure Stack HCI</a></li>
+            <li><a href="#nl-8">Vijf gotchas die we steeds tegenkomen</a></li>
+            <li><a href="#nl-9">De pre-migratie checklist</a></li>
+          </ol>
+        </div>
+
+        <h2 id="nl-1">1. Eerste beslissing: is Azure Local het juiste doel?</h2>
+        <p>Azure Local is geen gratis upgradepad voor elk Hyper-V cluster. Het is het juiste antwoord bij hyperconverged storage met S2D, Arc-native operations, integratie met Azure-diensten (Site Recovery, Backup, AKS on Azure Local), en een duidelijke roadmap-aansluiting op Microsofts huidige koers. Het is het verkeerde antwoord bij een klein two-node cluster met shared SAN, een workload-mix die per-core licensing niet rechtvaardigt, of harde policy-beperkingen die Azure-connectivity blokkeren.</p>
+        <p>CloudLabs begint elke Azure Local Readiness Assessment met die vraag. Als het antwoord is "we blijven beter op Windows Server met Failover Clustering en Hyper-V," is dat een legitieme uitkomst, en eentje die wij voor meerdere klanten gedocumenteerd hebben waar de per-core economics niet uitkwamen.</p>
+
+        <div class="callout"><strong>Snelle vuistregel</strong>
+        Azure Local heeft zin bij drie of meer nodes, met workloads die baat hebben bij S2D, en een organisatie die al andere workloads in Azure draait. Onder die grens is Windows Server met traditionele storage vaak nog steeds de betere optie. Een SAN-gebaseerde Hyper-V cluster build is dan niet ouderwets, het is een rationele keuze.</div>
+
+        <h2 id="nl-2">2. Hardware compatibiliteit, het niet-onderhandelbare deel</h2>
+        <p>Azure Local draait alleen op hardware uit de Azure Local Solutions Catalog. Niet de Windows Server HCL, de Azure Local catalogus. Dit is de grootste bron van projecten die ontsporen die wij zien. Een server die perfect werkte onder Windows Server 2022 en Failover Clustering staat soms helemaal niet op de Azure Local catalogus, of alleen met een specifiek firmware-niveau en een specifieke NIC.</p>
+
+        <p><strong>Wat te verifiëren, in deze volgorde:</strong></p>
+        <p><strong>Chassis plus CPU plus drive bay-configuratie</strong> moet matchen met een gevalideerde solution van Dell, HPE, Lenovo, Supermicro of een andere OEM in de Azure Local catalogus. "Bijna hetzelfde" telt niet. Het cluster deployt wel, maar je verliest support en je krijgt geen solution-updates.</p>
+        <p><strong>NIC's moeten RDMA-capable zijn</strong> voor het storage-netwerk. RoCEv2 (Mellanox/NVIDIA ConnectX-4 of nieuwer, Broadcom NetXtreme-E) of iWARP (Chelsio T5/T6, sommige Intel X722). De catalogus benoemt ondersteunde part numbers per solution. Een ConnectX-5 die in de ene solution staat is niet automatisch geldig in een andere.</p>
+        <p><strong>Drives moeten all-NVMe, all-SSD, of een hybride zijn die expliciet voor dat chassis gevalideerd is.</strong> SSD-vendors mixen binnen een node mag, capaciteiten mixen binnen een tier is vragen om scheve slijtage en onvoorspelbare capacity planning.</p>
+        <p><strong>TPM 2.0 en Secure Boot</strong> zijn verplicht. Vrijwel alle moderne hardware heeft het, maar BIOS-instellingen moeten expliciet gecontroleerd worden. Bij refurbished hardware staat TPM regelmatig uit.</p>
+        <p><strong>Solution firmware baseline.</strong> Elke OEM publiceert er één, en je moet die matchen vóór deployment. Daarna lopen updates via Azure Update Manager. Een afwijkende BIOS- of NIC-firmware-versie op één node breekt de eerste Update Run.</p>
+
+        <h2 id="nl-3">3. Netwerkarchitectuur en RDMA</h2>
+        <p>Azure Local heeft uitgesproken meningen over netwerktopologie. Het referentieontwerp is twee switches, twee NIC-poorten per node voor storage met RDMA, twee NIC-poorten voor management en compute. Network ATC (Automatic Cluster Networking) is de aanbevolen automatiseringslaag, die genereert de hele SET / vSwitch / QoS-configuratie uit een high-level intent.</p>
+
+        <p>De niet-onderhandelbare eisen:</p>
+        <ul>
+          <li><strong>Storage-netwerk moet RDMA zijn</strong> (RoCEv2 of iWARP) met DCB en PFC geconfigureerd op switchzijde. Voor RoCEv2 betekent dit minimaal PFC op prioriteit 3 en ETS op prioriteit 3 met een gegarandeerd bandbreedtepercentage. Switches zonder DCB-support kun je niet gebruiken voor productie-grade Azure Local.</li>
+          <li><strong>Storage-netwerk moet geïsoleerd zijn</strong>, apart VLAN, aparte fysieke NIC-poorten van management. Storage-verkeer combineren met management is in sommige topologieën ondersteund maar reduceert altijd de resilience.</li>
+          <li><strong>Minimaal 10 GbE</strong> voor de kleinste productie-deployments, 25 GbE is de praktische ondergrens voor serieuze workloads. 100 GbE is normaal aan de grotere kant. We zien in 2026 nauwelijks meer nieuwe deployments onder 25 GbE.</li>
+          <li><strong>Switches moeten DCB ondersteunen.</strong> Veel oudere datacenter-switches doen dat, maar switch-firmware moet expliciet gecontroleerd worden. Cisco Nexus 9K, Arista 7050, Dell Z9264F, en Mellanox SN3700 zijn praktijkkeuzes die wij vaak zien werken.</li>
+        </ul>
+
+        <p>Test het vóór je je vastlegt:</p>
+<pre><code># Verifieer of RDMA werkelijk werkt tussen twee kandidaat-nodes
+Test-RDMA -PfcEnabled $true -IfIndex (Get-NetAdapter 'Storage1').ifIndex `
+    -RemoteIpAddress 10.20.0.12
+
+# Check de onderhandelde snelheid en RDMA-capability op elke cluster-NIC
+Get-NetAdapterRdma | Select-Object Name, Enabled
+Get-NetAdapter | Select-Object Name, Status, LinkSpeed, MediaType</code></pre>
+
+        <p>Komt RDMA niet door deze test, dan stopt het project hier tot de switch-zijde is opgelost. Doorgaan en "later regelen" is in de praktijk een garantie voor performance-issues die tot na go-live verborgen blijven.</p>
+
+        <h2 id="nl-4">4. Identity: Entra ID, AD en het nieuwe cluster-identiteitsmodel</h2>
+        <p>Dit is waar veel bestaande Hyper-V beheerders verrast worden. Azure Local nodes worden domain-joined aan je on-premises Active Directory <em>én</em> geregistreerd in Microsoft Entra ID voor Arc-management. Het cluster heeft een eigen Entra ID service principal, en meerdere Azure RBAC-rollen moeten correct toegekend zijn voordat de deployment überhaupt start.</p>
+
+        <p><strong>Pre-deployment identity-checklist:</strong></p>
+        <ul>
+          <li>Een <strong>dedicated OU in Active Directory</strong> voor het Azure Local cluster, met inheritance geblokkeerd en Group Policy gefilterd. Inheritance niet blokkeren is de meest voorkomende reden dat een succesvolle deployment na de eerste GPO-refresh kapot gaat.</li>
+          <li>Een <strong>deployment user-account</strong> met lokale admin-rechten op alle nodes en het recht om computerobjecten in die OU aan te maken.</li>
+          <li>Een <strong>Entra ID tenant</strong> waarin het cluster geregistreerd wordt. Bij multi-tenant organisaties: dit vooraf beslissen. Het is achteraf niet makkelijk te wijzigen.</li>
+          <li>Een <strong>Azure subscription</strong> in dezelfde Entra-tenant, met de resource providers <code>Microsoft.AzureStackHCI</code>, <code>Microsoft.HybridConnectivity</code> en <code>Microsoft.Kubernetes</code> geregistreerd.</li>
+          <li><strong>Azure RBAC-rollen</strong> op die subscription: <em>Azure Connected Machine Onboarding</em>, <em>Azure Stack HCI Administrator</em>, en een Reader-rol op resource group-niveau voor de cluster-identiteit.</li>
+        </ul>
+
+        <h2 id="nl-5">5. Licensing en kosten-realiteit</h2>
+        <p>Azure Local wordt per fysieke core per maand gefactureerd via je Azure-subscription. Er is geen perpetual-licentie voor het OS zelf. Guest-workloads worden apart gelicenseerd. Windows Server VM's worden meestal gedekt door Windows Server Datacenter met Software Assurance, of door Azure Hybrid Benefit.</p>
+
+        <table>
+          <thead>
+            <tr><th>Kostencomponent</th><th>Model</th><th>Opmerking</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Azure Local OS</td><td>Per fysieke core per maand</td><td>Via Azure-subscription, geen perpetual optie</td></tr>
+            <tr><td>Windows Server guests</td><td>Datacenter SA of AHB</td><td>Onbeperkt Windows-VM's op de node bij Datacenter</td></tr>
+            <tr><td>Azure-diensten (Arc, Monitor, Defender)</td><td>Consumptie</td><td>Optioneel maar in de meeste deployments verwacht</td></tr>
+            <tr><td>Hardware</td><td>CapEx</td><td>Solution-pricing varieert per OEM</td></tr>
+            <tr><td>Egress / connectivity</td><td>Variabel</td><td>Materieel in Backup- en Site Recovery-scenario's</td></tr>
+          </tbody>
+        </table>
+
+        <p>Voor een four-node cluster met 32 cores per node en bestaande Datacenter SA wordt de meerprijs ten opzichte van Windows Server gedomineerd door de per-core OS-fee en de Azure-dienstconsumptie. Modelleer het vóór de commitment. Wij zien in onze opdrachten regelmatig dat de Azure Monitor en Log Analytics consumptie in steady state 3x hoger uitvalt dan tijdens deployment ingeschat.</p>
+
+        <div class="mid-cta">
+          <span class="label">Tussenstop</span>
+          <p>De vier secties hierboven (hardware, netwerk, identity, licensing) bepalen of een Azure Local project überhaupt mogelijk is. De drie secties hieronder bepalen of het operationeel houdbaar is.</p>
+          <p>Twijfel je of jouw omgeving er klaar voor is? Een Azure Local Readiness Assessment van CloudLabs geeft binnen vijf werkdagen een go/no-go advies met expliciete trade-offs, in een klantgericht <code>.docx</code> rapport.</p>
+          <a href="../book.html">Plan een Azure Local Readiness Assessment →</a>
+        </div>
+
+        <h2 id="nl-6">6. De operationele shift: Arc-managed everything</h2>
+        <p>De grootste niet-technische shift is operationeel. Day-2 management van Azure Local loopt primair via Azure Portal, Azure Arc en Azure Update Manager. Failover Cluster Manager werkt nog, maar is niet de primaire interface. PowerShell blijft volledig ondersteund en is wat wij voor vrijwel alles gebruiken tijdens een CloudLabs opdracht.</p>
+
+        <p>Wat verandert in de dagelijkse operatie:</p>
+        <ul>
+          <li><strong>Patching</strong> verhuist naar Azure Update Manager. Je plant update-runs vanuit de portal, het systeem patcht OS, firmware, drivers en solution-componenten in één gecoördineerde run. Geen <code>Invoke-CauRun</code> meer, geen handmatige firmware-flashes per node tijdens een onderhoudsvenster.</li>
+          <li><strong>Monitoring</strong> via Azure Monitor en Insights for Azure Local. Bestaande SCOM of third-party tooling kan blijven, maar de first-party ervaring zit in Azure. Voor organisaties met sterk geïnvesteerde on-premises monitoring is dit een dubbele rekening tijdens de transitie-periode.</li>
+          <li><strong>VM-management</strong> verschuift richting Arc-enabled VMs en de Azure-portal. Hyper-V Manager en Failover Cluster Manager werken nog, maar de nieuwe lifecycle (provisioning, backup, replicatie) is portal-gedreven. Beheerders die alles via PowerShell of WAC deden, krijgen er een nieuwe interface bij.</li>
+          <li><strong>Backup</strong> via Azure Backup for Azure Local, of third-party tools die expliciet Azure Local support hebben toegevoegd. Veeam, Commvault en Cohesity doen dat op het moment van schrijven. Een bestaande Veeam-deployment werkt door, maar moet bijgewerkt naar een Azure Local-bewuste versie.</li>
+        </ul>
+
+        <h2 id="nl-7">7. Migratiepaden vanuit Hyper-V en Azure Stack HCI</h2>
+        <p>Er is geen in-place upgrade van Windows Server Hyper-V naar Azure Local. Je bouwt een nieuw cluster, migreert workloads ernaartoe, en decommissioneert de oude. Vanaf Azure Stack HCI 22H2 bestaat er wel een in-place upgrade-pad naar Azure Local 23H2 en hoger, met prerequisites die zorgvuldige controle vereisen.</p>
+
+        <p>Migratie-opties voor workloads, in volgorde van afnemende voorkeur voor de meeste productie-VM's:</p>
+        <ul>
+          <li><strong>Hyper-V Replica</strong> werkt tussen Hyper-V en Azure Local zolang Hyper-V Replica is geconfigureerd. Cutover vereist een korte uitval (typisch onder een minuut per VM), en je kunt batches plannen tijdens een onderhoudsvenster.</li>
+          <li><strong>Storage Migration Service</strong> voor fileserver-rollen. Specifiek voor bestand-data, niet voor algemene VM-workloads.</li>
+          <li><strong>Backup-and-restore</strong> via Azure Site Recovery, Veeam of Commvault. De traagste optie, maar werkbaar voor grote omgevingen met strikte cutover-vensters waar Hyper-V Replica geen optie is.</li>
+          <li><strong>VHD copy plus register.</strong> Handmatig, scriptable, werkt prima voor laag-belang VM's. Acceptabel voor batch-workloads, dev/test, en alles wat een paar uur downtime mag hebben. Wij scripten dit standaard mee in CloudLabs migratie-opdrachten.</li>
+        </ul>
+
+        <h2 id="nl-8">8. Vijf gotchas die we steeds tegenkomen</h2>
+        <ol>
+          <li><strong>NIC's die RoCE-capable zijn maar niet op de solution-NIC lijst staan.</strong> Solution-validatie gebeurt op part number, niet op capability. Een ConnectX-6 die elders prima werkt is niet automatisch geldig in jouw specifieke solution.</li>
+          <li><strong>Switches zonder DCB op het storage-VLAN.</strong> Het cluster deployt en draait, performance is stilletjes gedegradeerd. We zien dit nog steeds bij DCB-geconfigureerde switches waar de configuratie alleen op management-poorten staat, niet op de poorten richting de Azure Local nodes.</li>
+          <li><strong>OU-inheritance niet geblokkeerd.</strong> Group Policy breekt de deployment dan op subtiele manieren na de eerste patch-cyclus. Symptoom: cluster werkt, Arc-registratie werkt, na een week vallen Update Runs uit met access-denied fouten waar niemand een logische oorzaak voor vindt.</li>
+          <li><strong>Entra ID tenant-mismatch.</strong> Cluster geregistreerd in de ene tenant, subscription in een andere. Verplaatsen is pijnlijk en in sommige scenario's vereist het opnieuw uitrollen van het cluster.</li>
+          <li><strong>Kostenverrassing op egress en Azure Monitor-data.</strong> Geschat op deployment-datavolumes, realiteit is 3x in steady state. Modelleer kosten op basis van werkelijke log-volumes van een bestaand Hyper-V cluster, niet op basis van Microsofts calculator-defaults.</li>
+        </ol>
+
+        <h2 id="nl-9">9. De pre-migratie checklist</h2>
+        <p>CloudLabs levert dit als klantgericht <code>.docx</code> na een Azure Local Readiness Assessment. De korte versie:</p>
+
+        <ul class="checklist">
+          <li>Gevalideerde solution geselecteerd uit Azure Local Solutions Catalog</li>
+          <li>Firmware-baseline gematcht op alle nodes</li>
+          <li>TPM 2.0 en Secure Boot geverifieerd in BIOS op iedere node</li>
+          <li>RDMA end-to-end getest tussen alle nodes op het storage-VLAN</li>
+          <li>DCB en PFC geconfigureerd op alle storage-switches</li>
+          <li>Dedicated OU in AD met inheritance geblokkeerd</li>
+          <li>Deployment-user met vereiste AD-rechten</li>
+          <li>Entra ID tenant-beslissing gedocumenteerd</li>
+          <li>Azure-subscription met vereiste resource providers geregistreerd</li>
+          <li>Azure RBAC-rollen toegewezen</li>
+          <li>Licentiemodel besloten en gebudgetteerd inclusief Azure Monitor consumptie</li>
+          <li>Backup-product gevalideerd voor Azure Local</li>
+          <li>Monitoring-stack besloten (alleen Azure Monitor of hybride)</li>
+          <li>Migratie-aanpak per workload gedocumenteerd</li>
+          <li>Cutover-vensters per workload-groep ingepland</li>
+          <li>Rollback-procedure geschreven en gereviewd</li>
+        </ul>
+
+        <p>Een Azure Local Readiness Assessment van CloudLabs loopt als opdracht met vaste scope, levert een readiness-rapport in Nederlands of Engels, en bevat een geschreven go/no-go advies met expliciete trade-offs. Voor klanten die er klaar voor zijn, voor klanten die het beter even niet kunnen doen, en voor klanten waar het antwoord ergens daartussen ligt.</p>
+        <p><a href="../book.html"><strong>Plan een Azure Local Readiness Assessment →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Veelgestelde vragen</h2>
+
+          <div class="faq-q">Wat is het verschil tussen Azure Stack HCI en Azure Local?</div>
+          <p>Azure Local is sinds eind 2024 de nieuwe naam voor wat eerder Azure Stack HCI heette. Het is hetzelfde product, met een verbreed scope (ook edge en kleinere deployments) en duidelijker positionering binnen Microsofts Arc-strategie. Bestaande Azure Stack HCI 22H2-clusters kunnen in-place upgraden naar Azure Local 23H2 en hoger.</p>
+
+          <div class="faq-q">Moet ik mijn hele Hyper-V cluster vervangen voor Azure Local?</div>
+          <p>Ja. Er is geen in-place upgrade van Windows Server Hyper-V naar Azure Local. Je bouwt een nieuw cluster op gevalideerde hardware en migreert workloads ernaartoe.</p>
+
+          <div class="faq-q">Werkt Azure Local zonder constante Azure-connectivity?</div>
+          <p>Tot 30 dagen disconnected operation wordt ondersteund. Daarna stopt het cluster met factureren via Azure en moet de connectivity hersteld zijn. Voor strict air-gapped omgevingen is Azure Local niet de juiste keuze.</p>
+
+          <div class="faq-q">Kan ik mijn bestaande VMM blijven gebruiken voor Azure Local?</div>
+          <p>Beperkt. SCVMM 2025 ondersteunt management van Azure Local clusters, maar de Arc-portal is de primaire interface volgens Microsofts roadmap. Voor klanten met een grote bestaande VMM-investering werkt beide naast elkaar tijdens de transitie.</p>
+
+          <div class="faq-q">Wat kost een typische four-node Azure Local deployment voor het OS zelf?</div>
+          <p>Per-core, per-maand pricing varieert per regio. Voor een four-node cluster met 32 cores per node komt de OS-component meestal op een paar duizend euro per maand uit, exclusief Azure-dienstconsumptie en exclusief Windows Server-licenties voor de guests. Modelleer met de Azure pricing calculator én met werkelijke log-volumes uit een vergelijkbare bestaande omgeving.</p>
+        </div>
+      </div>
+
+      <div class="related">
+        <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
+        <ul>
+          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
+          <li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>
+          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership-onbalans: oorzaken en oplossingen</span></a></li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
+    <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.3.3</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+</body>
+</html>

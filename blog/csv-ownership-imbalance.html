@@ -1,0 +1,593 @@
+<!doctype html>
+<!-- CloudLabs · v0.3.3 · Blog · CSV Ownership Imbalance -->
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1024">
+<link rel="icon" href="../favicon.png" type="image/png">
+<title>CSV Ownership Imbalance in Hyper-V Clusters: Causes and Fixes · CloudLabs</title>
+<meta name="description" content="Why Cluster Shared Volume ownership drifts after patching or failover, the measured performance impact on Hyper-V workloads, and how to keep CSVs balanced — by CloudLabs.">
+<link rel="canonical" href="https://cldlbs.com/blog/csv-ownership-imbalance.html">
+<link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/csv-ownership-imbalance.html">
+<link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/csv-ownership-imbalance.html">
+<link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/csv-ownership-imbalance.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cldlbs.com/blog/csv-ownership-imbalance.html">
+<meta property="og:title" content="CSV Ownership Imbalance in Hyper-V Clusters: Causes and Fixes">
+<meta property="og:description" content="Why CSV ownership drifts, the measured impact on Hyper-V workloads, and how to keep CSVs balanced — by CloudLabs.">
+<meta property="og:image" content="https://cldlbs.com/images/cluster.jpg">
+<meta property="article:published_time" content="2026-05-15">
+<meta property="article:author" content="Hans Vredevoort">
+<meta property="article:section" content="Storage">
+<meta property="article:tag" content="CSV">
+<meta property="article:tag" content="Cluster Shared Volume">
+<meta property="article:tag" content="Hyper-V">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BlogPosting",
+  "headline":"CSV Ownership Imbalance in Hyper-V Clusters: Causes and Fixes",
+  "description":"Why Cluster Shared Volume ownership drifts after patching or failover, the measured performance impact on Hyper-V workloads, and how to keep CSVs balanced.",
+  "image":"https://cldlbs.com/images/cluster.jpg",
+  "datePublished":"2026-05-15",
+  "dateModified":"2026-05-15",
+  "author":{"@type":"Person","name":"Hans Vredevoort","url":"https://cldlbs.com/about.html","jobTitle":"Hyper-V & Cluster Consultant","worksFor":{"@type":"Organization","name":"CloudLabs"}},
+  "publisher":{"@type":"Organization","name":"CloudLabs","url":"https://cldlbs.com/","logo":{"@type":"ImageObject","url":"https://cldlbs.com/favicon.png"}},
+  "mainEntityOfPage":{"@type":"WebPage","@id":"https://cldlbs.com/blog/csv-ownership-imbalance.html"},
+  "articleSection":"Storage",
+  "keywords":"CSV, Cluster Shared Volume, Hyper-V, Failover Cluster, BlockCache, Coordinator, PreferredOwners"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://cldlbs.com/"},
+    {"@type":"ListItem","position":2,"name":"Blog","item":"https://cldlbs.com/blog.html"},
+    {"@type":"ListItem","position":3,"name":"CSV Ownership Imbalance","item":"https://cldlbs.com/blog/csv-ownership-imbalance.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {
+      "@type":"Question",
+      "name":"How often should I rebalance CSVs?",
+      "acceptedAnswer":{"@type":"Answer","text":"After every patch round, every unplanned failover, and every node drain for maintenance. In practice that comes down to monthly or bi-monthly for most production clusters. Make it part of the standard post-maintenance checklist and nobody forgets."}
+    },
+    {
+      "@type":"Question",
+      "name":"Is Move-ClusterSharedVolume disruptive to running VMs?",
+      "acceptedAnswer":{"@type":"Answer","text":"No. It only transfers the coordinator role, not the volume itself. VMs on the CSV keep running without interruption. There is a brief pause in metadata operations during the handover, measured in milliseconds and invisible to workloads 99% of the time."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does CSV ownership affect write performance?",
+      "acceptedAnswer":{"@type":"Answer","text":"Limitedly. Direct writes go straight to storage and do not touch the coordinator. Metadata-heavy operations (VHD extension, snapshots, file creation) do hit the coordinator. On strongly metadata-heavy workloads (Exchange, some database engines with many small files) balancing has more impact than on read-heavy workloads."}
+    },
+    {
+      "@type":"Question",
+      "name":"What exactly does CsvBalancer = 2 do?",
+      "acceptedAnswer":{"@type":"Answer","text":"Mode 2 balances only when imbalance exceeds an internal threshold, instead of continuously aiming for perfect distribution. Useful on clusters where VMs have PreferredOwners set and you want to avoid the balancer making constant small adjustments that PreferredOwners then undoes."}
+    },
+    {
+      "@type":"Question",
+      "name":"Does CSV BlockCache work on Azure Local?",
+      "acceptedAnswer":{"@type":"Answer","text":"On Azure Local and Azure Stack HCI with Storage Spaces Direct, CSV BlockCache behaves differently because S2D has its own cache layer on the NVMe tier. For SAN-attached Hyper-V clusters, BlockCache is still very much worth using and is regularly forgotten."}
+    }
+  ]
+}
+</script>
+<!-- Google tag (gtag.js) with Consent Mode v2 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BETH09PH6C"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+  gtag('js',new Date());
+  gtag('config','G-BETH09PH6C',{'anonymize_ip':true});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .article{max-width:75ch;margin-top:8px}
+  .article .breadcrumb{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:18px}
+  .article .breadcrumb a{color:var(--ink-dim);text-decoration:none}
+  .article .breadcrumb a:hover{color:var(--cyan)}
+  .article h1{font-size:clamp(24px,4.4vw,36px);font-weight:600;line-height:1.2;margin:0 0 14px}
+  .article .meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:28px}
+  .article .lede{font-size:17px;line-height:1.6;color:var(--ink-dim);margin-bottom:18px}
+  .article h2{font-size:21px;font-weight:600;line-height:1.3;margin:40px 0 14px;color:var(--ink)}
+  .article h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+  .article p{font-size:15px;line-height:1.7;color:var(--ink-dim);margin:0 0 14px}
+  .article ul,.article ol{font-size:15px;line-height:1.7;color:var(--ink-dim);padding-left:22px;margin:0 0 14px}
+  .article li{margin-bottom:6px}
+  .article a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .article strong{color:var(--ink)}
+  .article code{font-family:var(--mono);font-size:13px;background:rgba(95,227,255,.08);color:var(--cyan);padding:1px 6px;border-radius:4px}
+  .article pre{background:rgba(15,24,50,.7);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink);margin:0 0 18px;line-height:1.55}
+  .article pre code{background:none;color:inherit;padding:0}
+  .article blockquote{border-left:2px solid var(--cyan);padding:6px 18px;margin:18px 0;color:var(--ink);font-style:italic;background:rgba(95,227,255,.04)}
+  .callout{border:1px solid var(--line-strong);border-radius:10px;padding:14px 18px;margin:18px 0;background:rgba(95,227,255,.04)}
+  .callout strong{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .mid-cta{border:1px solid var(--cyan);border-radius:12px;padding:22px 24px;margin:32px 0;background:linear-gradient(135deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .mid-cta p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 12px}
+  .mid-cta a{color:var(--cyan);font-weight:600;font-size:15px;text-decoration:none;border-bottom:0;display:inline-flex;align-items:center;gap:6px}
+  .mid-cta a:hover{color:var(--ink)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 28px;background:rgba(255,255,255,.02)}
+  .toc-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .toc ol{padding-left:20px;margin:0;font-size:14px;line-height:1.7}
+  .toc a{color:var(--ink-dim);text-decoration:none;border-bottom:0}
+  .toc a:hover{color:var(--cyan)}
+  .faq-block{margin-top:40px}
+  .faq-block h2{margin-bottom:18px}
+  .faq-q{font-size:16px;font-weight:600;color:var(--ink);margin:18px 0 6px}
+  .related{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+  .related h3{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .related ul{list-style:none;padding:0;margin:0}
+  .related li{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content"><span lang="en">Skip to content</span><span lang="nl">Naar inhoud</span></a>
+<div class="app">
+
+  <header>
+    <a class="brand" href="../index.html">
+      <span class="word">
+        <b><span class="wm-cloud">Cloud</span><span class="wm-labs">Labs</span></b>
+        <small>Decades of server expertise</small>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <div class="top-right">
+      <span class="status-dot"><span lang="en">Available · remote-first</span><span lang="nl">Beschikbaar · remote</span></span>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="nl" aria-pressed="false">NL</button>
+      </div>
+      <button id="consentReopen" class="consent-reopen" aria-label="Cookie preferences">
+        <span lang="en">Cookies</span><span lang="nl">Cookies</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="nav-wrap">
+  <nav class="tabs" aria-label="Main navigation">
+    <a href="../index.html"><span class="n">01</span><span lang="en">Home</span><span lang="nl">Home</span></a>
+    <a href="../services.html"><span class="n">02</span><span lang="en">Services</span><span lang="nl">Diensten</span></a>
+    <a href="../method.html"><span class="n">03</span><span lang="en">Method</span><span lang="nl">Werkwijze</span></a>
+    <a href="../findings.html"><span class="n">04</span><span lang="en">Findings</span><span lang="nl">Findings</span></a>
+    <a href="../engagement.html"><span class="n">05</span><span lang="en">Engagement</span><span lang="nl">Inzet</span></a>
+    <a href="../about.html"><span class="n">06</span><span lang="en">About</span><span lang="nl">Profiel</span></a>
+    <a href="../book.html"><span class="n">07</span><span lang="en">Book</span><span lang="nl">Boek</span></a>
+    <a href="../faq.html"><span class="n">08</span><span lang="en">FAQ</span><span lang="nl">FAQ</span></a>
+    <a href="../blog.html" aria-current="page"><span class="n">09</span><span lang="en">Blog</span><span lang="nl">Blog</span></a>
+  </nav>
+  </div>
+
+  <main id="main-content">
+    <article class="article">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../index.html"><span lang="en">Home</span><span lang="nl">Home</span></a> ·
+        <a href="../blog.html">Blog</a> ·
+        <span lang="en">CSV Ownership Imbalance</span>
+        <span lang="nl">CSV ownership onbalans</span>
+      </nav>
+
+      <!-- ============= ENGLISH ============= -->
+      <div lang="en">
+        <h1>CSV Ownership Imbalance in Hyper-V Clusters: Causes and Fixes</h1>
+        <div class="meta">By Hans Vredevoort · 15 May 2026 · 12 minute read · Storage</div>
+
+        <p class="lede">After every patch round, every Live Migration storm, every planned failover, Cluster Shared Volume ownership drifts apart. One node ends up owning all the CSVs, becomes coordinator for every metadata operation, and quietly caps read performance for the entire cluster. CSV ownership imbalance is a top three finding in CloudLabs Hyper-V Cluster Health Checks, and also one of the simplest to fix permanently.</p>
+        <p class="lede">This article explains what actually happens under the hood, how to detect it, and how to keep CSVs balanced without constant manual intervention.</p>
+
+        <div class="toc">
+          <div class="toc-title">In this article</div>
+          <ol>
+            <li><a href="#en-1">What CSV ownership actually means</a></li>
+            <li><a href="#en-2">Why ownership drifts, three field patterns</a></li>
+            <li><a href="#en-3">Performance impact, with numbers</a></li>
+            <li><a href="#en-4">Diagnosing ownership and traffic</a></li>
+            <li><a href="#en-5">Manual rebalance, the safe procedure</a></li>
+            <li><a href="#en-6">Automating rebalance</a></li>
+            <li><a href="#en-7">CSV BlockCache and why it changes the math</a></li>
+            <li><a href="#en-8">Preventing recurrence</a></li>
+          </ol>
+        </div>
+
+        <h2 id="en-1">1. What CSV ownership actually means</h2>
+        <p>A Cluster Shared Volume is one NTFS or ReFS volume that all cluster nodes can read and write simultaneously. Behind that simple description sits a coordinator role. One node, the coordinator node, owns the metadata operations of the volume. Allocating space, extending a VHD, creating a snapshot, changing attributes, all of that runs through the coordinator. Other nodes do direct I/O for normal reads and writes, bypassing the coordinator entirely.</p>
+        <p>This works well when the cluster is balanced. The coordinator role for one CSV asks a small amount of CPU and memory on the owner, so the load spreads naturally. It works poorly when one node owns all CSVs at once. That node then handles metadata work for every workload in the cluster, and any operation that runs through redirected I/O (which happens automatically when direct I/O is impossible) goes through that node.</p>
+        <p>Two situations force redirected I/O. The local node has lost storage connectivity to the volume (the node has no direct path, so I/O routes over the cluster network to the coordinator, which does still have a path). Or the operation is one that always runs through the coordinator (most metadata operations, some snapshot work, backup software accessing the volume in certain modes).</p>
+        <p>Redirected I/O is supported and safe. It is also significantly slower than direct I/O and can saturate cluster networks if left unchecked.</p>
+
+        <h2 id="en-2">2. Why ownership drifts, three field patterns</h2>
+
+        <h3>Pattern 1: the Patch Tuesday parade</h3>
+        <p>CAU (Cluster Aware Updating) drains a node, patches it, brings it back, drains the next one. Each node hands its CSVs to whichever node has capacity at that moment, usually the just-patched node, which has the lowest load. At the end of the run, the last-patched node owns most or all CSVs.</p>
+
+        <h3>Pattern 2: the midnight failover</h3>
+        <p>An unplanned failover (usually a NIC firmware glitch, a flapping storage path, or a host briefly losing its quorum vote) moves all CSVs from the failing node to one other node. Nobody notices in the morning because workloads are running. The imbalance stays until the next intervention.</p>
+
+        <h3>Pattern 3: the "I'll set it back later" debug session</h3>
+        <p>An engineer pinned all CSVs to one node to rule out a node-specific issue during an incident, fixed the issue, and never undid the pin. We find <code>PreferredOwners</code> values on CSV resources months after the original incident, with the engineer who set them long gone from the company.</p>
+
+        <h2 id="en-3">3. Performance impact, with numbers</h2>
+        <p>On a four-node Hyper-V cluster running an average VDI workload, CloudLabs recently measured the impact during a Hyper-V Cluster Health Check.</p>
+        <p>Workload: 220 VDI desktops, mix of boot storm and steady state. Cluster: 4 × Dell R7625, S2D, all-NVMe, 25 GbE storage.</p>
+
+<pre><code>State A — CSVs balanced (3 per node, 12 CSVs total)
+  Average read latency:  0.62 ms
+  P99 read latency:       2.1 ms
+  Coordinator CPU:        5–8% per node
+
+State B — One node owns all 12 CSVs (post-patch, no rebalance)
+  Average read latency:  1.08 ms
+  P99 read latency:       9.4 ms (4.5x worse)
+  Coordinator CPU:       22–28% on the owner
+  Storage cluster network: saturated during boot storm</code></pre>
+
+        <p>In State B the cluster was technically healthy. Nothing alarmed. The only user-side symptom was complaints about login times, which the ops team was investigating under the working hypothesis of a network problem in the VDI farm. The fix took eight minutes.</p>
+
+        <h2 id="en-4">4. Diagnosing ownership and traffic</h2>
+        <p>Three views give the full picture:</p>
+
+<pre><code># Ownership distribution
+Get-ClusterSharedVolume |
+    Select-Object Name, OwnerNode, State |
+    Group-Object OwnerNode |
+    Sort-Object Count -Descending |
+    Select-Object Name, Count
+
+# Redirected I/O, anything not 'Direct' is suspect
+Get-ClusterSharedVolume | ForEach-Object {
+    [PSCustomObject]@{
+        Name       = $_.Name
+        Owner      = $_.OwnerNode
+        IOMode     = $_.SharedVolumeInfo.Partition.IsBlockIOMode  # $true = direct
+        Redirected = $_.SharedVolumeInfo.RedirectedAccess
+    }
+}
+
+# Coordinator CPU per node, run during a normal workday
+Get-Counter -Counter '\Cluster Shared Volume(*)\IO Read Bytes/sec' `
+    -SampleInterval 5 -MaxSamples 12</code></pre>
+
+        <p>The CloudLabs Health Check report includes a one-liner per CSV: owner, mode (direct or redirected), average read latency over the inventory window, and a flag if <code>PreferredOwners</code> is set to anything other than default.</p>
+
+        <h2 id="en-5">5. Manual rebalance, the safe procedure</h2>
+        <p>A manual rebalance is safe during business hours. <code>Move-ClusterSharedVolume</code> transfers the coordinator role without disrupting running VMs, the volume stays available. The only thing that happens is a brief pause in metadata operations on that CSV, measured in milliseconds.</p>
+
+<pre><code># Identify which CSV to move
+Get-ClusterSharedVolume |
+    Select-Object Name, OwnerNode |
+    Group-Object OwnerNode |
+    Where-Object Count -gt 3
+
+# Move one CSV to a specific node
+Move-ClusterSharedVolume -Name 'CSV-VDI-Pool-03' -Node 'HV02'
+
+# Move and verify
+Move-ClusterSharedVolume -Name 'CSV-VDI-Pool-03' -Node 'HV02' -PassThru |
+    Select-Object Name, OwnerNode, State</code></pre>
+
+        <p>If you want to drain a node, for example for maintenance, move its CSVs explicitly instead of relying on automatic balancing:</p>
+
+<pre><code>$sourceNode  = 'HV01'
+$targetNodes = (Get-ClusterNode |
+    Where-Object {$_.State -eq 'Up' -and $_.Name -ne $sourceNode}).Name
+
+$i = 0
+Get-ClusterSharedVolume | Where-Object OwnerNode -eq $sourceNode | ForEach-Object {
+    $target = $targetNodes[$i % $targetNodes.Count]
+    Write-Host "Moving $($_.Name) from $sourceNode to $target"
+    Move-ClusterSharedVolume -Name $_.Name -Node $target
+    $i++
+}</code></pre>
+
+        <div class="mid-cta">
+          <p>If your monitoring stack has never alerted on skewed CSV ownership and your cluster has been patched in the last six months, you are almost certainly out of balance right now. The five-line script above tells you in ten seconds.</p>
+          <p>A CloudLabs Hyper-V Cluster Health Check maps this alongside nine other quiet issues in two days.</p>
+          <a href="../book.html">Schedule a Health Check intro call →</a>
+        </div>
+
+        <h2 id="en-6">6. Automating rebalance</h2>
+        <p>Microsoft introduced automatic CSV balancing in Windows Server 2016. It is on by default and works well in most environments. You can verify and tune it:</p>
+
+<pre><code>(Get-Cluster).CsvBalancer
+
+# Values:
+#   0 = off
+#   1 = always balance (default)
+#   2 = balance only when threshold exceeded
+
+# Force immediate re-evaluation
+(Get-Cluster).CsvBalancer = 1
+$cluster = Get-Cluster
+$cluster.CsvBalancer = $cluster.CsvBalancer</code></pre>
+
+        <p>Two cases where automatic balancing does not do what you want. CSV resources with explicit <code>PreferredOwners</code>, the balancer respects them. And heterogeneous node sizing, the balancer treats nodes as equals, so if one node has half the RAM/CPU of the others, even balancing distributes the load poorly.</p>
+        <p>In both cases, a scheduled PowerShell rebalance after maintenance windows is the safer pattern. CloudLabs delivers this as part of the remediation report on every engagement where imbalance is a finding.</p>
+
+        <h2 id="en-7">7. CSV BlockCache and why it changes the math</h2>
+        <p>CSV BlockCache is a read-side memory cache on each node. When enabled, it dramatically lowers the cost of redirected reads because most are served from local RAM. It does not solve imbalance, but it softens the consequences.</p>
+
+<pre><code>(Get-Cluster).BlockCacheSize   # value in MB, 0 = off
+
+# Enable with 2 GB per node, tune to your RAM budget
+(Get-Cluster).BlockCacheSize = 2048
+
+# Verify per-CSV cache state
+Get-ClusterSharedVolume | ForEach-Object {
+    $_ | Select-Object Name,
+        @{N='CacheEnabled';E={$_.SharedVolumeInfo.Partition.IsCsvCacheEnabled}}
+}</code></pre>
+
+        <p>Size BlockCache from your steady-state RAM headroom, not from the N-1 evacuated state. Verify that VM density still fits comfortably under failover conditions. We typically recommend 1 to 4 GB per node on Hyper-V clusters, and 4 to 16 GB on storage-heavy workloads.</p>
+        <p>Full context on BlockCache trade-offs is in <a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</a>, issue 7.</p>
+
+        <h2 id="en-8">8. Preventing recurrence</h2>
+        <p>The CloudLabs remediation pattern for CSV ownership imbalance has four parts.</p>
+        <ol>
+          <li>Remove explicit <code>PreferredOwners</code> on every CSV unless there is a documented reason. Most that we find are debug session residue.</li>
+          <li>Enable CSV BlockCache at 1 to 4 GB per node, and verify enabled state on every CSV partition.</li>
+          <li>Add a scheduled rebalance as a post-maintenance step in every runbook. CAU's post-update task list is the right place; if you do not use CAU, your patch automation has to handle it.</li>
+          <li>Monitor the ownership distribution as a metric. We add a five-line script to ops dashboards: count of CSVs per node, alarm when one node owns more than <code>(total / nodes) + 1</code>.</li>
+        </ol>
+
+        <p>CSV ownership imbalance is the textbook example of a finding that monitoring tools miss because each individual component looks healthy. Surfacing it is exactly what an independent Hyper-V Cluster Health Check is for.</p>
+
+        <p><a href="../book.html"><strong>Schedule a Hyper-V Cluster Health Check intro call →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Frequently asked questions</h2>
+
+          <div class="faq-q">How often should I rebalance CSVs?</div>
+          <p>After every patch round, every unplanned failover, and every node drain for maintenance. In practice that comes down to monthly or bi-monthly for most production clusters. Make it part of the standard post-maintenance checklist and nobody forgets.</p>
+
+          <div class="faq-q">Is Move-ClusterSharedVolume disruptive to running VMs?</div>
+          <p>No. It only transfers the coordinator role, not the volume itself. VMs on the CSV keep running without interruption. There is a brief pause in metadata operations during the handover, measured in milliseconds and invisible to workloads 99% of the time.</p>
+
+          <div class="faq-q">Does CSV ownership affect write performance?</div>
+          <p>Limitedly. Direct writes go straight to storage and do not touch the coordinator. Metadata-heavy operations (VHD extension, snapshots, file creation) do hit the coordinator. On strongly metadata-heavy workloads (Exchange, some database engines with many small files) balancing has more impact than on read-heavy workloads.</p>
+
+          <div class="faq-q">What exactly does CsvBalancer = 2 do?</div>
+          <p>Mode 2 balances only when imbalance exceeds an internal threshold, instead of continuously aiming for perfect distribution. Useful on clusters where VMs have <code>PreferredOwners</code> set and you want to avoid the balancer making constant small adjustments that <code>PreferredOwners</code> then undoes.</p>
+
+          <div class="faq-q">Does CSV BlockCache work on Azure Local?</div>
+          <p>On Azure Local and Azure Stack HCI with Storage Spaces Direct, CSV BlockCache behaves differently because S2D has its own cache layer on the NVMe tier. For SAN-attached Hyper-V clusters, BlockCache is still very much worth using and is regularly forgotten.</p>
+        </div>
+      </div>
+
+      <!-- ============= DUTCH ============= -->
+      <div lang="nl">
+        <h1>CSV ownership onbalans in Hyper-V clusters: oorzaken en oplossingen</h1>
+        <div class="meta">Door Hans Vredevoort · 15 mei 2026 · 12 minuten leestijd · Storage</div>
+
+        <p class="lede">Na elke patch-ronde, na elke Live Migration-storm, na elke geplande failover drijft Cluster Shared Volume ownership uit elkaar. Eén node bezit uiteindelijk alle CSV's, wordt coordinator voor elke metadata-operatie, en limiteert stilletjes de read-performance van het hele cluster. CSV ownership onbalans is een van de top drie bevindingen in CloudLabs Hyper-V Cluster Health Checks, en ook een van de eenvoudigste om permanent op te lossen.</p>
+        <p class="lede">Dit artikel legt uit wat er werkelijk gebeurt onder de motorkap, hoe je het detecteert, en hoe je CSV's gebalanceerd houdt zonder constante handmatige interventie.</p>
+
+        <div class="toc">
+          <div class="toc-title">In dit artikel</div>
+          <ol>
+            <li><a href="#nl-1">Wat CSV ownership werkelijk betekent</a></li>
+            <li><a href="#nl-2">Waarom ownership scheef raakt, drie praktijkpatronen</a></li>
+            <li><a href="#nl-3">De performance-impact, met cijfers</a></li>
+            <li><a href="#nl-4">Ownership en traffic diagnosticeren</a></li>
+            <li><a href="#nl-5">Handmatige rebalance, de veilige procedure</a></li>
+            <li><a href="#nl-6">Rebalance automatiseren</a></li>
+            <li><a href="#nl-7">CSV BlockCache en waarom dat de wiskunde verandert</a></li>
+            <li><a href="#nl-8">Herhaling voorkomen</a></li>
+          </ol>
+        </div>
+
+        <h2 id="nl-1">1. Wat CSV ownership werkelijk betekent</h2>
+        <p>Een Cluster Shared Volume is één NTFS- of ReFS-volume dat alle cluster-nodes gelijktijdig kunnen lezen en schrijven. Achter die simpele beschrijving zit een coordinator-rol. Eén node, de coordinator-node, bezit de metadata-operaties van het volume. Ruimte alloceren, een VHD uitbreiden, een snapshot maken, attributen wijzigen, dat loopt allemaal via de coordinator. Andere nodes doen direct I/O voor normale reads en writes, en omzeilen de coordinator daarmee volledig.</p>
+        <p>Dit werkt goed wanneer het cluster gebalanceerd is. De coordinator-rol voor één CSV vraagt een kleine hoeveelheid CPU en geheugen op de eigenaar, dus de load verdeelt zich vanzelf. Het werkt slecht wanneer één node alle CSV's tegelijk bezit. Die node doet dan metadata-werk voor elke workload in het cluster, en elke operatie die wél via redirected I/O loopt (wat automatisch gebeurt als direct I/O onmogelijk is) gaat via die node.</p>
+        <p>Twee situaties forceren redirected I/O. De storage-connectiviteit naar het volume is op de lokale node verloren (de node heeft geen direct pad, dus I/O wordt over het clusternetwerk gerouteerd naar de coordinator, die het pad nog wel heeft). Of de operatie is er een die altijd via de coordinator loopt (de meeste metadata-operaties, sommige snapshot-werkzaamheden, backup-software die het volume in bepaalde modi benadert).</p>
+        <p>Redirected I/O is supported en veilig. Het is ook significant trager dan direct I/O en kan cluster-netwerken verzadigen als je het laat lopen.</p>
+
+        <h2 id="nl-2">2. Waarom ownership scheef raakt, drie praktijkpatronen</h2>
+
+        <h3>Patroon 1: de Patch Tuesday-parade</h3>
+        <p>CAU (Cluster Aware Updating) drained een node, patcht hem, brengt hem terug, drained de volgende. Elke node geeft zijn CSV's aan welke node op dat moment capaciteit heeft, meestal de net gepatchte node, die de laagste load heeft. Aan het eind van de run bezit de laatst-gepatchte node de meeste of alle CSV's.</p>
+
+        <h3>Patroon 2: de middernachtelijke failover</h3>
+        <p>Een ongeplande failover (meestal een NIC-firmware glitch, storage-pad dat flapt, of een host die kort zijn quorum-stem kwijt was) verplaatst alle CSV's van de falende node naar één andere node. Niemand merkt het 's ochtends, want de workloads draaien. De onbalans blijft staan tot de volgende interventie.</p>
+
+        <h3>Patroon 3: de "ik zet 't later wel terug" debug-sessie</h3>
+        <p>Een engineer pinde alle CSV's op één node om een node-specifiek probleem uit te sluiten tijdens een incident, loste het issue op, en heeft de pin nooit ongedaan gemaakt. We vinden <code>PreferredOwners</code>-waarden op CSV-resources maanden na het oorspronkelijke incident, met de engineer die ze instelde inmiddels niet meer in dienst.</p>
+
+        <h2 id="nl-3">3. De performance-impact, met cijfers</h2>
+        <p>Op een four-node Hyper-V cluster met een gemiddelde VDI-workload heeft CloudLabs in een recente Hyper-V Cluster Health Check de impact gemeten.</p>
+        <p>Workload: 220 VDI-desktops, mix van boot storm en steady state. Cluster: 4 × Dell R7625, S2D, all-NVMe, 25 GbE storage.</p>
+
+<pre><code>State A — CSV's gebalanceerd (3 per node, 12 CSV's totaal)
+  Gemiddelde read-latency:  0.62 ms
+  P99 read-latency:          2.1 ms
+  Coordinator CPU:           5–8% per node
+
+State B — Eén node bezit alle 12 CSV's (post-patch, geen rebalance)
+  Gemiddelde read-latency:  1.08 ms
+  P99 read-latency:          9.4 ms (4.5x slechter)
+  Coordinator CPU:          22–28% op de eigenaar
+  Storage-clusternetwerk:    verzadigd tijdens boot storm</code></pre>
+
+        <p>Het cluster was in State B technisch gezond. Niets alarmeerde. Het enige symptoom aan gebruikerszijde was klachten over inlogtijden, die het ops-team aan het onderzoeken was onder de werkhypothese dat er een netwerkprobleem in de VDI-farm zat. De fix kostte acht minuten.</p>
+
+        <h2 id="nl-4">4. Ownership en traffic diagnosticeren</h2>
+        <p>Drie views geven het volledige beeld:</p>
+
+<pre><code># Verdeling van ownership
+Get-ClusterSharedVolume |
+    Select-Object Name, OwnerNode, State |
+    Group-Object OwnerNode |
+    Sort-Object Count -Descending |
+    Select-Object Name, Count
+
+# Redirected I/O, alles wat niet 'Direct' is, is verdacht
+Get-ClusterSharedVolume | ForEach-Object {
+    [PSCustomObject]@{
+        Name       = $_.Name
+        Owner      = $_.OwnerNode
+        IOMode     = $_.SharedVolumeInfo.Partition.IsBlockIOMode  # $true = direct
+        Redirected = $_.SharedVolumeInfo.RedirectedAccess
+    }
+}
+
+# Coordinator CPU per node, uitvoeren tijdens een normale werkdag
+Get-Counter -Counter '\Cluster Shared Volume(*)\IO Read Bytes/sec' `
+    -SampleInterval 5 -MaxSamples 12</code></pre>
+
+        <p>Het CloudLabs Health Check-rapport bevat een one-liner per CSV: owner, mode (direct of redirected), gemiddelde read-latency over het inventarisatie-venster, en een vlag als <code>PreferredOwners</code> op iets anders dan default staat.</p>
+
+        <h2 id="nl-5">5. Handmatige rebalance, de veilige procedure</h2>
+        <p>Een handmatige rebalance is veilig tijdens kantoortijden. <code>Move-ClusterSharedVolume</code> draagt de coordinator-rol over zonder verstoring van draaiende VM's, het volume blijft beschikbaar. Het enige wat gebeurt is een korte pauze in metadata-operaties op die CSV, in milliseconden gemeten.</p>
+
+<pre><code># Bepaal welke CSV te verplaatsen
+Get-ClusterSharedVolume |
+    Select-Object Name, OwnerNode |
+    Group-Object OwnerNode |
+    Where-Object Count -gt 3
+
+# Verplaats één CSV naar een specifieke node
+Move-ClusterSharedVolume -Name 'CSV-VDI-Pool-03' -Node 'HV02'
+
+# Verplaatsen en verifiëren
+Move-ClusterSharedVolume -Name 'CSV-VDI-Pool-03' -Node 'HV02' -PassThru |
+    Select-Object Name, OwnerNode, State</code></pre>
+
+        <p>Wil je een node drainen, bijvoorbeeld voor onderhoud, verplaats dan zijn CSV's expliciet, in plaats van te vertrouwen op automatische balancing:</p>
+
+<pre><code>$sourceNode  = 'HV01'
+$targetNodes = (Get-ClusterNode |
+    Where-Object {$_.State -eq 'Up' -and $_.Name -ne $sourceNode}).Name
+
+$i = 0
+Get-ClusterSharedVolume | Where-Object OwnerNode -eq $sourceNode | ForEach-Object {
+    $target = $targetNodes[$i % $targetNodes.Count]
+    Write-Host "Moving $($_.Name) from $sourceNode to $target"
+    Move-ClusterSharedVolume -Name $_.Name -Node $target
+    $i++
+}</code></pre>
+
+        <div class="mid-cta">
+          <p>Als jouw monitoring-stack nog nooit gealarmeerd heeft op scheve CSV-ownership en je cluster is in de afgelopen zes maanden gepatcht, dan ben je vrijwel zeker nu uit balans. Het vijfregelige script hierboven vertelt het je binnen tien seconden.</p>
+          <p>Een CloudLabs Hyper-V Cluster Health Check brengt het samen met negen andere stille issues in twee dagen in kaart.</p>
+          <a href="../book.html">Plan een Health Check kennismaking →</a>
+        </div>
+
+        <h2 id="nl-6">6. Rebalance automatiseren</h2>
+        <p>Microsoft introduceerde automatische CSV-balancing in Windows Server 2016. Het staat default aan en werkt in de meeste omgevingen goed. Je kunt het verifiëren en bijsturen:</p>
+
+<pre><code>(Get-Cluster).CsvBalancer
+
+# Waarden:
+#   0 = uit
+#   1 = altijd balanceren (default)
+#   2 = balanceren alleen bij overschrijden van threshold
+
+# Direct herevalueren forceren
+(Get-Cluster).CsvBalancer = 1
+$cluster = Get-Cluster
+$cluster.CsvBalancer = $cluster.CsvBalancer</code></pre>
+
+        <p>Twee gevallen waarin automatische balancing niet doet wat je wilt. CSV-resources met expliciete <code>PreferredOwners</code>, de balancer respecteert die. En heterogene node-sizing, de balancer behandelt nodes als gelijken, dus als één node de helft van RAM/CPU van de anderen heeft, verdeelt gelijk balanceren de load slecht.</p>
+        <p>Voor beide gevallen is een geplande PowerShell-rebalance na onderhoudsvensters het veiligere patroon. CloudLabs levert dit als onderdeel van het remediation-rapport bij elke opdracht waar onbalans een bevinding is.</p>
+
+        <h2 id="nl-7">7. CSV BlockCache en waarom dat de wiskunde verandert</h2>
+        <p>CSV BlockCache is een read-side memory-cache op iedere node. Aangezet, verlaagt het de kosten van redirected reads dramatisch, omdat de meeste vanuit lokaal RAM worden geserveerd. Het lost onbalans niet op, maar het verzacht wel de gevolgen ervan.</p>
+
+<pre><code>(Get-Cluster).BlockCacheSize   # waarde in MB, 0 = uit
+
+# Aanzetten met 2 GB per node, pas aan op je RAM-budget
+(Get-Cluster).BlockCacheSize = 2048
+
+# Per-CSV cache-status verifiëren
+Get-ClusterSharedVolume | ForEach-Object {
+    $_ | Select-Object Name,
+        @{N='CacheEnabled';E={$_.SharedVolumeInfo.Partition.IsCsvCacheEnabled}}
+}</code></pre>
+
+        <p>Dimensioneer BlockCache vanuit je steady-state RAM-headroom, niet vanuit de N-1 geëvacueerde toestand. Verifieer dat VM-dichtheid nog comfortabel past onder failover-condities. Wij adviseren typisch 1 tot 4 GB per node op Hyper-V clusters en 4 tot 16 GB op storage-zware workloads.</p>
+        <p>Volledige context over BlockCache trade-offs zit in <a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</a>, issue 7.</p>
+
+        <h2 id="nl-8">8. Herhaling voorkomen</h2>
+        <p>Het CloudLabs remediation-patroon voor CSV ownership onbalans heeft vier delen.</p>
+        <ol>
+          <li>Verwijder expliciete <code>PreferredOwners</code> op elke CSV, tenzij er een gedocumenteerde reden is. De meeste die wij vinden zijn debug-sessie residu.</li>
+          <li>Zet CSV BlockCache aan op 1 tot 4 GB per node en verifieer enabled state op elke CSV-partitie.</li>
+          <li>Voeg een geplande rebalance toe als post-maintenance stap in elk runbook. CAU's post-update tasklist is de juiste plek, gebruik je geen CAU, dan moet je patch-automatisering het regelen.</li>
+          <li>Monitor de ownership-verdeling als metriek. We voegen een script van vijf regels toe aan ops-dashboards: aantal CSV's per node, alarm als één node meer dan <code>(totaal / nodes) + 1</code> bezit.</li>
+        </ol>
+
+        <p>CSV ownership onbalans is het schoolvoorbeeld van een bevinding die monitoring-tools missen omdat elk individueel onderdeel er gezond uitziet. Het zichtbaar maken is precies waar een onafhankelijke Hyper-V Cluster Health Check voor is.</p>
+
+        <p><a href="../book.html"><strong>Plan een Hyper-V Cluster Health Check kennismaking →</strong></a></p>
+
+        <div class="faq-block">
+          <h2>Veelgestelde vragen</h2>
+
+          <div class="faq-q">Hoe vaak moet ik CSV's herbalanceren?</div>
+          <p>Na elke patch-ronde, na elke ongeplande failover, en na elke node-drain voor onderhoud. In de praktijk komt dat neer op maandelijks tot tweemaandelijks in de meeste productie-clusters. Maak het onderdeel van de standaard post-maintenance checklist, dan vergeet niemand het.</p>
+
+          <div class="faq-q">Is Move-ClusterSharedVolume verstorend voor draaiende VM's?</div>
+          <p>Nee. Het verplaatst alleen de coordinator-rol, niet het volume zelf. VM's op het CSV blijven draaien zonder onderbreking. Wel is er een paar milliseconden pauze in metadata-operaties tijdens de overdracht, wat in 99% van de gevallen onzichtbaar is voor workloads.</p>
+
+          <div class="faq-q">Heeft CSV ownership invloed op write-performance?</div>
+          <p>Beperkt. Direct writes gaan rechtstreeks naar storage en raken de coordinator niet. Wel raken metadata-zware operaties (VHD-uitbreiding, snapshots, file-creatie) de coordinator. Bij sterk metadata-zware workloads (Exchange, sommige database-engines met veel kleine bestanden) heeft balancing meer impact dan bij read-heavy workloads.</p>
+
+          <div class="faq-q">Wat doet CsvBalancer = 2 precies?</div>
+          <p>Mode 2 balanceert alleen wanneer de onbalans een interne drempel overschrijdt, in plaats van continu te streven naar perfecte verdeling. Nuttig op clusters waar VM's met <code>PreferredOwners</code> zijn ingesteld en je wilt voorkomen dat de balancer constant kleine optimalisaties doet die door <code>PreferredOwners</code> weer worden ongedaan gemaakt.</p>
+
+          <div class="faq-q">Werkt CSV BlockCache ook op Azure Local?</div>
+          <p>Op Azure Local en Azure Stack HCI met Storage Spaces Direct werkt CSV BlockCache anders, omdat S2D zijn eigen cache-laag heeft op de NVMe-tier. Voor SAN-attached Hyper-V clusters is BlockCache nog steeds zinvol en wordt het regelmatig vergeten.</p>
+        </div>
+      </div>
+
+      <div class="related">
+        <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
+        <ul>
+          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
+          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
+          <li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>
+          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <span>&copy; 2026 CloudLabs</span>
+    <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
+    <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
+    <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
+    <span class="brand-version">v0.3.3</span>
+  </footer>
+
+</div>
+
+<div id="consentBanner" class="consent-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+  <p>
+    <span lang="en">We use Google Analytics to understand how visitors use this site. Analytics cookies are only set if you accept.</span>
+    <span lang="nl">Wij gebruiken Google Analytics om te zien hoe bezoekers deze site gebruiken. Analytische cookies worden alleen geplaatst als u akkoord gaat.</span>
+  </p>
+  <div class="consent-row">
+    <button class="btn-accept" id="consentAccept"><span lang="en">Accept analytics</span><span lang="nl">Accepteer analytics</span></button>
+    <button class="btn-decline" id="consentDecline"><span lang="en">Decline</span><span lang="nl">Weigeren</span></button>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+</body>
+</html>

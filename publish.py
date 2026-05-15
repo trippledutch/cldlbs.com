@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""
+CloudLabs blog publish helper.
+
+Usage:
+    ./publish.py --list                 # show status of all blogs
+    ./publish.py <slug>                 # publish a draft (unhide everywhere)
+    ./publish.py --unpublish <slug>     # back to draft (hide everywhere)
+
+The slug is the filename without .html, e.g.:
+    ./publish.py azure-local-migration-readiness
+
+What "publish" does:
+  1. Remove <meta name="robots" content="noindex,nofollow"> from blog/<slug>.html
+  2. Uncomment the blog card on blog.html
+  3. Add the BlogPosting entry back to blog.html's JSON-LD
+  4. Add the URL to sitemap.xml
+
+"unpublish" does the inverse.
+
+Idempotent. Safe to run multiple times.
+"""
+import re
+import sys
+from pathlib import Path
+
+# slug -> headline (used in blog.html JSON-LD)
+BLOGS = {
+    'top-10-hyper-v-cluster-issues':
+        'Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026',
+    'azure-local-migration-readiness':
+        "Azure Local Migration Readiness Checklist: What's Different in 2026",
+    'csv-ownership-imbalance':
+        'CSV Ownership Imbalance in Hyper-V Clusters: Causes and Fixes',
+    'live-migration-wrong-network':
+        'Live Migration on the Wrong Network: The Silent Hyper-V Pitfall',
+    'cluster-witness-comparison':
+        'File Share Witness vs Cloud Witness vs Disk Witness: Which Type Fits Your Cluster?',
+    'vmware-to-hyper-v-migration-assessment':
+        'VMware to Hyper-V Cluster Migration: A 6-Step Pre-Migration Assessment',
+    'hyper-v-time-drift-kerberos-csv':
+        'Time Drift in Hyper-V Clusters: The Silent Killer of Kerberos and CSV',
+    'windows-server-2025-hyper-v-cluster-features':
+        'Windows Server 2025 Hyper-V: What It Really Adds for Cluster Operators',
+    'cluster-aware-updating-runbook-audit-trail':
+        'Cluster Aware Updating: Runbook, Audit Trail, and What Nobody Documents',
+    'san-vs-s2d-vs-azure-local-hyper-v-storage':
+        'SAN vs S2D vs Azure Local: Choosing Hyper-V Storage in 2026',
+}
+
+ROOT = Path(__file__).parent
+BLOG_DIR = ROOT / 'blog'
+INDEX = ROOT / 'blog.html'
+SITEMAP = ROOT / 'sitemap.xml'
+
+NOINDEX_LINE = '<meta name="robots" content="noindex,nofollow">\n'
+
+# ----------------------------------------------------------------------------
+
+def is_published(slug):
+    """A blog is published if its file has NO noindex meta tag."""
+    f = BLOG_DIR / f'{slug}.html'
+    if not f.exists():
+        return None
+    return 'name="robots"' not in f.read_text()
+
+def list_status():
+    print(f'{"Status":<10} {"Slug":<48} Headline')
+    print('-' * 100)
+    for slug, headline in BLOGS.items():
+        st = is_published(slug)
+        if st is None:
+            label = 'MISSING'
+        elif st:
+            label = 'PUBLISHED'
+        else:
+            label = 'draft'
+        print(f'{label:<10} {slug:<48} {headline[:50]}')
+
+# ----------------------------------------------------------------------------
+
+def publish_post_file(slug):
+    f = BLOG_DIR / f'{slug}.html'
+    t = f.read_text()
+    if 'name="robots"' not in t:
+        return False
+    t = re.sub(r'<meta name="robots"[^>]*>\n', '', t, count=1)
+    f.write_text(t)
+    return True
+
+def unpublish_post_file(slug):
+    f = BLOG_DIR / f'{slug}.html'
+    t = f.read_text()
+    if 'name="robots"' in t:
+        return False
+    t = re.sub(
+        r'(<meta name="viewport"[^>]*>\n)',
+        r'\1' + NOINDEX_LINE,
+        t,
+        count=1,
+    )
+    f.write_text(t)
+    return True
+
+# ----------------------------------------------------------------------------
+
+def publish_card_in_index(slug):
+    """Remove the DRAFT comment wrapping the blog card on blog.html."""
+    t = INDEX.read_text()
+    href = f'blog/{slug}.html'
+    # Match: <!-- DRAFT...\n      <a class="blog-card" href="<href>"...> ... </a>\n      -->
+    pat = re.compile(
+        r'\n\s*<!-- DRAFT, not yet published\. Remove these comments to publish\.\n'
+        r'(\s*<a class="blog-card" href="' + re.escape(href) + r'">.*?</a>)\n'
+        r'\s*-->\n',
+        re.DOTALL,
+    )
+    new, n = pat.subn(r'\n\1\n', t, count=1)
+    if n == 0:
+        return False
+    INDEX.write_text(new)
+    return True
+
+def unpublish_card_in_index(slug):
+    """Wrap the blog card on blog.html in a DRAFT comment."""
+    t = INDEX.read_text()
+    href = f'blog/{slug}.html'
+    # If the card already sits inside a DRAFT block, don't re-wrap.
+    already_wrapped = re.search(
+        r'<!-- DRAFT[^<]*<a class="blog-card" href="' + re.escape(href) + r'">',
+        t,
+        re.DOTALL,
+    )
+    if already_wrapped:
+        return False
+    pat = re.compile(
+        r'\n(\s*<a class="blog-card" href="' + re.escape(href) + r'">.*?</a>)\n',
+        re.DOTALL,
+    )
+    def wrap(m):
+        block = m.group(1)
+        return f'\n      <!-- DRAFT, not yet published. Remove these comments to publish.\n{block}\n      -->\n'
+    new, n = pat.subn(wrap, t, count=1)
+    if n == 0:
+        return False
+    INDEX.write_text(new)
+    return True
+
+# ----------------------------------------------------------------------------
+
+def add_blogposting_jsonld(slug):
+    """Add the BlogPosting entry back into blog.html JSON-LD, if missing."""
+    headline = BLOGS[slug]
+    url = f'https://cldlbs.com/blog/{slug}.html'
+    entry = (
+        f'    {{"@type":"BlogPosting","headline":"{headline}",'
+        f'"url":"{url}","datePublished":"2026-05-15",'
+        f'"author":{{"@type":"Person","name":"Hans Vredevoort"}}}}'
+    )
+    t = INDEX.read_text()
+    if url in t and '"@type":"BlogPosting"' in t and slug in t.split('"blogPost":[', 1)[1].split(']', 1)[0]:
+        return False  # already present
+    # Insert before the closing ] of blogPost array, after the last existing entry
+    pat = re.compile(r'("blogPost":\[)(.*?)(\s*\])', re.DOTALL)
+    m = pat.search(t)
+    if not m:
+        return False
+    head, body, tail = m.group(1), m.group(2), m.group(3)
+    if url in body:
+        return False
+    # Append entry to the existing list
+    if body.strip():
+        new_body = body.rstrip().rstrip(',') + ',\n' + entry + '\n  '
+    else:
+        new_body = '\n' + entry + '\n  '
+    new = t[:m.start()] + head + new_body + tail + t[m.end():]
+    INDEX.write_text(new)
+    return True
+
+def remove_blogposting_jsonld(slug):
+    url = f'https://cldlbs.com/blog/{slug}.html'
+    t = INDEX.read_text()
+    pat = re.compile(
+        r',?\s*\{"@type":"BlogPosting","headline":"[^"]+","url":"'
+        + re.escape(url)
+        + r'","datePublished":"[^"]+","author":\{"@type":"Person","name":"[^"]+"\}\}',
+    )
+    new, n = pat.subn('', t, count=1)
+    # Clean up dangling comma after [
+    new = re.sub(r'\[\s*,', '[', new)
+    new = re.sub(r',\s*,', ',', new)
+    new = re.sub(r',(\s*\])', r'\1', new)
+    if n == 0:
+        return False
+    INDEX.write_text(new)
+    return True
+
+# ----------------------------------------------------------------------------
+
+SITEMAP_URL_TEMPLATE = '''  <url>
+    <loc>https://cldlbs.com/blog/{slug}.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/{slug}.html"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/{slug}.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/{slug}.html"/>
+    <lastmod>2026-05-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+  </url>
+'''
+
+def add_to_sitemap(slug):
+    t = SITEMAP.read_text()
+    needle = f'<loc>https://cldlbs.com/blog/{slug}.html</loc>'
+    if needle in t:
+        return False
+    entry = SITEMAP_URL_TEMPLATE.format(slug=slug)
+    t = t.replace('</urlset>', entry + '</urlset>')
+    SITEMAP.write_text(t)
+    return True
+
+def remove_from_sitemap(slug):
+    t = SITEMAP.read_text()
+    pat = re.compile(
+        r'  <url>\n'
+        r'    <loc>https://cldlbs\.com/blog/' + re.escape(slug) + r'\.html</loc>\n'
+        r'(?:    <xhtml:link[^\n]*\n)+'
+        r'    <lastmod>[^<]+</lastmod>\n'
+        r'    <changefreq>[^<]+</changefreq>\n'
+        r'    <priority>[^<]+</priority>\n'
+        r'  </url>\n',
+    )
+    new, n = pat.subn('', t, count=1)
+    if n == 0:
+        return False
+    SITEMAP.write_text(new)
+    return True
+
+# ----------------------------------------------------------------------------
+
+def publish(slug):
+    if slug not in BLOGS:
+        print(f'Unknown slug: {slug}')
+        print(f'Valid slugs: {", ".join(BLOGS.keys())}')
+        return 1
+    print(f'Publishing {slug}...')
+    r1 = publish_post_file(slug);       print(f'  noindex removed:       {"yes" if r1 else "already removed"}')
+    r2 = publish_card_in_index(slug);   print(f'  card un-hidden:        {"yes" if r2 else "already visible"}')
+    r3 = add_blogposting_jsonld(slug);  print(f'  JSON-LD entry added:   {"yes" if r3 else "already present"}')
+    r4 = add_to_sitemap(slug);          print(f'  sitemap entry added:   {"yes" if r4 else "already present"}')
+    print('Done. Commit and push to publish live.')
+    return 0
+
+def unpublish(slug):
+    if slug not in BLOGS:
+        print(f'Unknown slug: {slug}')
+        return 1
+    print(f'Unpublishing {slug}...')
+    r1 = unpublish_post_file(slug);     print(f'  noindex added:         {"yes" if r1 else "already present"}')
+    r2 = unpublish_card_in_index(slug); print(f'  card hidden:           {"yes" if r2 else "already hidden"}')
+    r3 = remove_blogposting_jsonld(slug); print(f'  JSON-LD entry removed: {"yes" if r3 else "not present"}')
+    r4 = remove_from_sitemap(slug);     print(f'  sitemap entry removed: {"yes" if r4 else "not present"}')
+    print('Done.')
+    return 0
+
+# ----------------------------------------------------------------------------
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ('-h', '--help'):
+        print(__doc__)
+        return 0
+    if args[0] == '--list':
+        list_status()
+        return 0
+    if args[0] == '--unpublish':
+        if len(args) < 2:
+            print('Usage: ./publish.py --unpublish <slug>')
+            return 1
+        return unpublish(args[1])
+    return publish(args[0])
+
+if __name__ == '__main__':
+    sys.exit(main())

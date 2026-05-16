@@ -118,13 +118,4 @@
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
-  <url>
-    <loc>https://cldlbs.com/blog/live-migration-wrong-network.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://cldlbs.com/blog/live-migration-wrong-network.html"/>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://cldlbs.com/blog/live-migration-wrong-network.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://cldlbs.com/blog/live-migration-wrong-network.html"/>
-    <lastmod>2026-05-15</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-  </url>
 </urlset>

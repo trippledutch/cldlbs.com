@@ -209,7 +209,7 @@
 
         <h2 id="en-1">1. Live Migration on the wrong network</h2>
         <p>The single most common finding in CloudLabs Hyper-V Cluster Health Checks. Live Migration falls back to the management or heartbeat VLAN because the dedicated migration network has no IP metric advantage, is not enabled for cluster traffic, or was never added to the explicit per-host Live Migration list. The symptom is rarely a failure. It is slow migrations during patch windows and unexplained latency on cluster heartbeats when multiple VMs move at once.</p>
-        <p>Two configuration planes matter. The <code>Role</code> per cluster network at the cluster level, and the explicit Live Migration network list per host. They are independent. We regularly find clusters where one is correct and the other is forgotten. Full detail in <!--LINK:live-migration-wrong-network--><a href="live-migration-wrong-network.html">Live Migration on the wrong network: a common Hyper-V pitfall</a><!--/LINK:live-migration-wrong-network-->.</p>
+        <p>Two configuration planes matter. The <code>Role</code> per cluster network at the cluster level, and the explicit Live Migration network list per host. They are independent. We regularly find clusters where one is correct and the other is forgotten. Full detail in <!--LINK:live-migration-wrong-network--><!--draft:<a href="live-migration-wrong-network.html">Live Migration on the wrong network: a common Hyper-V pitfall</a>-->Live Migration on the wrong network: a common Hyper-V pitfall<!--/LINK:live-migration-wrong-network-->.</p>
 
 <pre><code># Cluster network roles
 Get-ClusterNetwork | Select-Object Name, Role, Address, AutoMetric, Metric
@@ -407,7 +407,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
 
         <h2 id="nl-1">1. Live Migration over het verkeerde netwerk</h2>
         <p>De meest voorkomende bevinding in CloudLabs Hyper-V Cluster Health Checks. Live Migration valt terug op het management- of heartbeat-VLAN omdat het toegewezen migratienetwerk geen IP-metric-voordeel heeft, niet is aangezet voor clusterverkeer, of nooit is toegevoegd aan de expliciete Live Migration-lijst per Hyper-V host. Het symptoom is zelden een failure. Wel trage migraties tijdens patch-vensters en onverklaarbare latency op cluster-heartbeats als er meerdere VM's tegelijk verplaatsen.</p>
-        <p>Twee configuratie-vlakken zijn relevant. De <code>Role</code> per cluster-netwerk op clusterniveau, en de expliciete Live Migration-netwerklijst per host. Die zijn onafhankelijk. Wij vinden regelmatig dat één correct staat en de andere vergeten is. Volledige uitleg in <!--LINK:live-migration-wrong-network--><a href="live-migration-wrong-network.html">Live Migration over het verkeerde netwerk: een veelvoorkomende Hyper-V valkuil</a><!--/LINK:live-migration-wrong-network-->.</p>
+        <p>Twee configuratie-vlakken zijn relevant. De <code>Role</code> per cluster-netwerk op clusterniveau, en de expliciete Live Migration-netwerklijst per host. Die zijn onafhankelijk. Wij vinden regelmatig dat één correct staat en de andere vergeten is. Volledige uitleg in <!--LINK:live-migration-wrong-network--><!--draft:<a href="live-migration-wrong-network.html">Live Migration over het verkeerde netwerk: een veelvoorkomende Hyper-V valkuil</a>-->Live Migration over het verkeerde netwerk: een veelvoorkomende Hyper-V valkuil<!--/LINK:live-migration-wrong-network-->.</p>
 
         <p><strong>Diagnose:</strong></p>
 <pre><code># Cluster-netwerkrollen
@@ -585,7 +585,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
           <!--LINK:csv-ownership-imbalance--><!--draft:<li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership-onbalans: oorzaken en oplossingen</span></a></li>--><!--/LINK:csv-ownership-imbalance-->
-          <!--LINK:live-migration-wrong-network--><li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li><!--/LINK:live-migration-wrong-network-->
+          <!--LINK:live-migration-wrong-network--><!--draft:<li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>--><!--/LINK:live-migration-wrong-network-->
           <!--LINK:cluster-witness-comparison--><!--draft:<li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>--><!--/LINK:cluster-witness-comparison-->
           <!--LINK:azure-local-migration-readiness--><!--draft:<li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie-readiness checklist</span></a></li>--><!--/LINK:azure-local-migration-readiness-->
         </ul>

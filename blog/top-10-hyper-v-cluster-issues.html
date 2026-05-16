@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- CloudLabs · v0.3.3 · Blog · Top 10 Hyper-V Cluster Issues -->
+<!-- CloudLabs · v0.3.4 · Blog · Top 10 Hyper-V Cluster Issues -->
 <html lang="en" data-lang="en">
 <head>
 <meta charset="utf-8">
@@ -209,7 +209,7 @@
 
         <h2 id="en-1">1. Live Migration on the wrong network</h2>
         <p>The single most common finding in CloudLabs Hyper-V Cluster Health Checks. Live Migration falls back to the management or heartbeat VLAN because the dedicated migration network has no IP metric advantage, is not enabled for cluster traffic, or was never added to the explicit per-host Live Migration list. The symptom is rarely a failure. It is slow migrations during patch windows and unexplained latency on cluster heartbeats when multiple VMs move at once.</p>
-        <p>Two configuration planes matter. The <code>Role</code> per cluster network at the cluster level, and the explicit Live Migration network list per host. They are independent. We regularly find clusters where one is correct and the other is forgotten. Full detail in <a href="live-migration-wrong-network.html">Live Migration on the wrong network: a common Hyper-V pitfall</a>.</p>
+        <p>Two configuration planes matter. The <code>Role</code> per cluster network at the cluster level, and the explicit Live Migration network list per host. They are independent. We regularly find clusters where one is correct and the other is forgotten. Full detail in <!--LINK:live-migration-wrong-network--><a href="live-migration-wrong-network.html">Live Migration on the wrong network: a common Hyper-V pitfall</a><!--/LINK:live-migration-wrong-network-->.</p>
 
 <pre><code># Cluster network roles
 Get-ClusterNetwork | Select-Object Name, Role, Address, AutoMetric, Metric
@@ -238,7 +238,7 @@ Get-ClusterResource | Where-Object {$_.OwnerGroup -eq 'Cluster Group'} |
     Format-Table Name, State, OwnerNode, ResourceType</code></pre>
 
         <p><strong>Rule of thumb.</strong> Single site, two nodes: Cloud Witness, by definition outside your failure domain. Single site, three or more nodes: Cloud Witness unless Azure connectivity is not an option, otherwise a File Share Witness on truly independent infrastructure. Two-site stretched: Cloud Witness or a File Share Witness in a third site, never inside one of the two cluster sites. Disconnected or air-gapped: File Share Witness on documented independent storage and power.</p>
-        <p>Full comparison in <a href="cluster-witness-comparison.html">File Share Witness vs Cloud Witness vs Disk Witness: which to choose</a>.</p>
+        <p>Full comparison in <!--LINK:cluster-witness-comparison--><!--draft:<a href="cluster-witness-comparison.html">File Share Witness vs Cloud Witness vs Disk Witness: which to choose</a>-->File Share Witness vs Cloud Witness vs Disk Witness: which to choose<!--/LINK:cluster-witness-comparison-->.</p>
 
         <h2 id="en-3">3. CSV ownership imbalance</h2>
         <p>Cluster Shared Volume ownership concentrates on one node after a patch round, a failover, or a node drain nobody rebalanced afterwards. The symptom is uneven CPU on the coordinator node, and read-heavy workloads experiencing latency spikes that look random unless you correlate them with CSV ownership.</p>
@@ -256,7 +256,7 @@ Get-ClusterSharedVolume | ForEach-Object {
     $i++
 }</code></pre>
 
-        <p>We treat this as an ongoing operational task, not a one-time fix. The post-patch checklist in our remediation reports always ends with a CSV rebalance. Deep dive in <a href="csv-ownership-imbalance.html">CSV ownership imbalance: causes and fixes</a>.</p>
+        <p>We treat this as an ongoing operational task, not a one-time fix. The post-patch checklist in our remediation reports always ends with a CSV rebalance. Deep dive in <!--LINK:csv-ownership-imbalance--><!--draft:<a href="csv-ownership-imbalance.html">CSV ownership imbalance: causes and fixes</a>-->CSV ownership imbalance: causes and fixes<!--/LINK:csv-ownership-imbalance-->.</p>
 
         <div class="mid-cta">
           <p>Half the issues above take less than ten minutes to spot. The other half you only find if you know where to look. A CloudLabs Hyper-V Cluster Health Check maps them in two days with a severity-ranked action list.</p>
@@ -374,7 +374,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
           <p>A Health Check is technical, focused on operational stability, performance, and supportability. An audit is broader and usually covers security and compliance too. We deliver Health Checks; for audits we partner.</p>
 
           <div class="faq-q">Does this work for Azure Local or Azure Stack HCI clusters?</div>
-          <p>Yes, with adjusted scope. We replace Storage Fabric and Storage Array sections with a Storage Spaces Direct section. See <a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a>.</p>
+          <p>Yes, with adjusted scope. We replace Storage Fabric and Storage Array sections with a Storage Spaces Direct section. See <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a>-->Azure Local migration readiness checklist<!--/LINK:azure-local-migration-readiness-->.</p>
 
           <div class="faq-q">Do you offer remediation, or only advice?</div>
           <p>Both. A Health Check can stand alone, or feed into a remediation engagement where we work through the findings with the customer.</p>
@@ -407,7 +407,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
 
         <h2 id="nl-1">1. Live Migration over het verkeerde netwerk</h2>
         <p>De meest voorkomende bevinding in CloudLabs Hyper-V Cluster Health Checks. Live Migration valt terug op het management- of heartbeat-VLAN omdat het toegewezen migratienetwerk geen IP-metric-voordeel heeft, niet is aangezet voor clusterverkeer, of nooit is toegevoegd aan de expliciete Live Migration-lijst per Hyper-V host. Het symptoom is zelden een failure. Wel trage migraties tijdens patch-vensters en onverklaarbare latency op cluster-heartbeats als er meerdere VM's tegelijk verplaatsen.</p>
-        <p>Twee configuratie-vlakken zijn relevant. De <code>Role</code> per cluster-netwerk op clusterniveau, en de expliciete Live Migration-netwerklijst per host. Die zijn onafhankelijk. Wij vinden regelmatig dat één correct staat en de andere vergeten is. Volledige uitleg in <a href="live-migration-wrong-network.html">Live Migration over het verkeerde netwerk: een veelvoorkomende Hyper-V valkuil</a>.</p>
+        <p>Twee configuratie-vlakken zijn relevant. De <code>Role</code> per cluster-netwerk op clusterniveau, en de expliciete Live Migration-netwerklijst per host. Die zijn onafhankelijk. Wij vinden regelmatig dat één correct staat en de andere vergeten is. Volledige uitleg in <!--LINK:live-migration-wrong-network--><a href="live-migration-wrong-network.html">Live Migration over het verkeerde netwerk: een veelvoorkomende Hyper-V valkuil</a><!--/LINK:live-migration-wrong-network-->.</p>
 
         <p><strong>Diagnose:</strong></p>
 <pre><code># Cluster-netwerkrollen
@@ -438,7 +438,7 @@ Get-ClusterResource | Where-Object {$_.OwnerGroup -eq 'Cluster Group'} |
     Format-Table Name, State, OwnerNode, ResourceType</code></pre>
 
         <p><strong>Beslissingsmatrix als vuistregel.</strong> Single-site twee nodes: Cloud Witness, per definitie buiten je failure domain. Single-site drie of meer nodes: Cloud Witness tenzij Azure-connectivity geen optie is, anders File Share Witness op infrastructuur die echt onafhankelijk is. Two-site stretched: Cloud Witness of een File Share Witness in een derde site, nooit in een van de twee cluster-sites. Disconnected of air-gapped: File Share Witness op gedocumenteerd onafhankelijke storage en voeding.</p>
-        <p>Volledige vergelijking in <a href="cluster-witness-comparison.html">File Share Witness vs Cloud Witness vs Disk Witness: welk type kies je?</a>.</p>
+        <p>Volledige vergelijking in <!--LINK:cluster-witness-comparison--><!--draft:<a href="cluster-witness-comparison.html">File Share Witness vs Cloud Witness vs Disk Witness: welk type kies je?</a>-->File Share Witness vs Cloud Witness vs Disk Witness: welk type kies je?<!--/LINK:cluster-witness-comparison-->.</p>
 
         <h2 id="nl-3">3. CSV ownership-onbalans</h2>
         <p>Cluster Shared Volume-eigendom stapelt zich op één node na een patch-ronde, een failover, of een node-drain die niemand achteraf herbalanceerd heeft. Het symptoom is ongelijke CPU op de coordinator-node en read-heavy workloads die latency-pieken ervaren die er random uitzien, tenzij je ze correleert met CSV-ownership.</p>
@@ -456,7 +456,7 @@ Get-ClusterSharedVolume | ForEach-Object {
     $i++
 }</code></pre>
 
-        <p>Wij behandelen dit als een doorlopende operationele taak, niet als eenmalige fix. De post-patch checklist in onze remediation-rapporten eindigt altijd met een CSV-rebalance. Diepere uitleg in <a href="csv-ownership-imbalance.html">CSV ownership-onbalans: oorzaken en oplossingen</a>.</p>
+        <p>Wij behandelen dit als een doorlopende operationele taak, niet als eenmalige fix. De post-patch checklist in onze remediation-rapporten eindigt altijd met een CSV-rebalance. Diepere uitleg in <!--LINK:csv-ownership-imbalance--><!--draft:<a href="csv-ownership-imbalance.html">CSV ownership-onbalans: oorzaken en oplossingen</a>-->CSV ownership-onbalans: oorzaken en oplossingen<!--/LINK:csv-ownership-imbalance-->.</p>
 
         <div class="mid-cta">
           <p>De helft van de issues hierboven kost minder dan tien minuten om vast te stellen. De andere helft zie je pas als je weet waar je moet kijken. Een CloudLabs Hyper-V Cluster Health Check brengt het in twee dagen in kaart, met een actielijst op severity.</p>
@@ -574,7 +574,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
           <p>Een Health Check is technisch en gericht op operationele stabiliteit, performance en supportability. Een audit is breder en raakt vaak ook security en compliance. Wij doen Health Checks; voor audits werken we samen met partners.</p>
 
           <div class="faq-q">Werkt dit ook voor Azure Local of Azure Stack HCI clusters?</div>
-          <p>Ja, met een aangepaste scope. Storage Fabric en Storage Array secties vervangen we door een Storage Spaces Direct sectie. Zie <a href="azure-local-migration-readiness.html">Azure Local migratie-readiness checklist</a>.</p>
+          <p>Ja, met een aangepaste scope. Storage Fabric en Storage Array secties vervangen we door een Storage Spaces Direct sectie. Zie <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migratie-readiness checklist</a>-->Azure Local migratie-readiness checklist<!--/LINK:azure-local-migration-readiness-->.</p>
 
           <div class="faq-q">Bieden jullie ook remediation, of alleen advies?</div>
           <p>Beide. Een Health Check kan op zichzelf opgeleverd worden, of als startpunt voor een remediation-traject waar wij de gevonden issues samen met de klant oplossen.</p>
@@ -584,10 +584,10 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
       <div class="related">
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
-          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership-onbalans: oorzaken en oplossingen</span></a></li>
-          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
-          <li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>
-          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie-readiness checklist</span></a></li>
+          <!--LINK:csv-ownership-imbalance--><!--draft:<li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership-onbalans: oorzaken en oplossingen</span></a></li>--><!--/LINK:csv-ownership-imbalance-->
+          <!--LINK:live-migration-wrong-network--><li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li><!--/LINK:live-migration-wrong-network-->
+          <!--LINK:cluster-witness-comparison--><!--draft:<li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>--><!--/LINK:cluster-witness-comparison-->
+          <!--LINK:azure-local-migration-readiness--><!--draft:<li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie-readiness checklist</span></a></li>--><!--/LINK:azure-local-migration-readiness-->
         </ul>
       </div>
     </article>
@@ -598,7 +598,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
     <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
     <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
     <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
-    <span class="brand-version">v0.3.3</span>
+    <span class="brand-version">v0.3.4</span>
   </footer>
 
 </div>

@@ -33,11 +33,12 @@ Bij de start: **1 published** (cornerstone Top 10 Issues) + **9 drafts**.
 ./publish.py azure-local-migration-readiness
 ```
 
-Het script doet automatisch vier dingen:
+Het script doet automatisch vijf dingen:
 1. Verwijdert `<meta name="robots" content="noindex,nofollow">` uit het blog-bestand
 2. Verwijdert de HTML-comment rond de card in `blog.html`
 3. Voegt de BlogPosting entry toe aan de Blog JSON-LD op `blog.html`
 4. Voegt de URL toe aan `sitemap.xml`
+5. Synchroniseert cross-blog links (zie [Cross-blog links](#cross-blog-links) hieronder)
 
 **Stap 2** — controleer de status:
 
@@ -66,6 +67,39 @@ Soms wil je een blog tijdelijk verbergen, bijvoorbeeld om te corrigeren:
 ```
 
 Doet de inverse: `noindex` terug, card weer in comments, URL uit sitemap. Daarna `git commit` + `git push`. Google verwijdert hem binnen enkele dagen uit de zoekresultaten zodra hij hercrawlt.
+
+## Cross-blog links
+
+Een gepubliceerde blog mag niet linken naar een draft. Daarvoor gebruiken we **LINK-markers** in de bron-HTML. Elke verwijzing naar een andere blog wordt verpakt in een HTML-comment-paar:
+
+**Inline verwijzing in een paragraaf:**
+
+```html
+Full detail in <!--LINK:live-migration-wrong-network--><a href="live-migration-wrong-network.html">Live Migration on the wrong network</a><!--/LINK:live-migration-wrong-network-->.
+```
+
+**Verwijzing in een "Related articles" lijst:**
+
+```html
+<!--LINK:csv-ownership-imbalance--><li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance</span><span lang="nl">CSV ownership-onbalans</span></a></li><!--/LINK:csv-ownership-imbalance-->
+```
+
+Het slug in de marker (`live-migration-wrong-network`, `csv-ownership-imbalance`) is de bestandsnaam zonder `.html`.
+
+**Wat het script doet:** `publish.py` roept bij elke publish/unpublish automatisch `sync_links()` aan. Die loopt door alle `blog/*.html` bestanden en kijkt per LINK-marker of de doel-blog gepubliceerd is.
+
+- **Doel is published** → `<a href="...">tekst</a>` blijft staan; link is klikbaar.
+- **Doel is draft** → de `<a>` wordt verstopt in een `<!--draft:...-->` comment. Inline tekst leest verder als gewone prose; een hele `<li>` wordt onzichtbaar voor de browser. Google ziet geen link naar een noindex-pagina.
+
+De markers blijven altijd staan, dus de transitie is reversibel — publiceer je later de draft, dan herstelt `sync_links()` de `<a>` automatisch.
+
+Je kunt sync ook handmatig forceren (bv. nadat je een nieuwe link hebt toegevoegd):
+
+```
+./publish.py --sync-links
+```
+
+**Discipline bij schrijven:** wikkel elke nieuwe cross-blog link in een LINK-marker, ook als het doel al gepubliceerd is. Dan blijft het systeem werken als je het doel ooit terugzet naar draft.
 
 ## Een geheel nieuwe blog toevoegen
 

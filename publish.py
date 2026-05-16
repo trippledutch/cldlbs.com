@@ -237,6 +237,87 @@ def remove_from_sitemap(slug):
 
 # ----------------------------------------------------------------------------
 
+# Cross-blog link markers. Source HTML wraps each cross-blog reference like:
+#
+#   inline:  <!--LINK:slug--><a href="slug.html">link text</a><!--/LINK:slug-->
+#   list:    <!--LINK:slug--><li><a href="slug.html">...</a></li><!--/LINK:slug-->
+#
+# When the target slug is a draft, sync_links() hides the link:
+#   - inline anchor -> plain text (strips <a> tags, keeps inner text)
+#   - <li> wrapper  -> HTML comment placeholder (entire <li> removed from render)
+#
+# The markers stay in place either way, so the transition is reversible.
+
+LINK_BLOCK_RE = re.compile(
+    r'<!--LINK:(?P<slug>[a-z0-9-]+)-->(?P<body>.*?)<!--/LINK:(?P=slug)-->',
+    re.DOTALL,
+)
+
+# A <li> reference wraps a single <li>...</li> (possibly with surrounding whitespace).
+LI_BODY_RE = re.compile(r'^\s*<li>.*</li>\s*$', re.DOTALL)
+# A hidden <li> reference is stored as a placeholder we can recognise.
+LI_HIDDEN_RE = re.compile(r'^<!--draft:(?P<inner><li>.*</li>)-->$', re.DOTALL)
+# An inline reference is an <a> tag with optional inner markup.
+INLINE_BODY_RE = re.compile(r'^<a [^>]*>(?P<text>.*)</a>$', re.DOTALL)
+# A hidden inline reference stores the original anchor in a comment so we can restore it.
+INLINE_HIDDEN_RE = re.compile(r'^<!--draft:(?P<inner><a [^>]*>.*</a>)-->(?P<text>.*)$', re.DOTALL)
+
+
+def _transform_block(slug, body, published_slugs):
+    """Return new body for a LINK block, based on whether slug is published."""
+    is_pub = slug in published_slugs
+
+    # Already in hidden-list form
+    m = LI_HIDDEN_RE.match(body)
+    if m:
+        return m.group('inner') if is_pub else body
+
+    # Already in hidden-inline form (comment + plain text)
+    m = INLINE_HIDDEN_RE.match(body)
+    if m:
+        return m.group('inner') if is_pub else body
+
+    # Live <li> form
+    if LI_BODY_RE.match(body):
+        if is_pub:
+            return body
+        # Hide the entire <li> by stashing it in a comment placeholder
+        return f'<!--draft:{body.strip()}-->'
+
+    # Live inline <a> form
+    m = INLINE_BODY_RE.match(body)
+    if m:
+        if is_pub:
+            return body
+        anchor = body
+        text = m.group('text')
+        return f'<!--draft:{anchor}-->{text}'
+
+    # Unknown shape — leave untouched
+    return body
+
+
+def sync_links(verbose=True):
+    """Walk every blog file and update cross-blog link visibility."""
+    published = {s for s in BLOGS if is_published(s)}
+    changed_files = 0
+    for f in sorted(BLOG_DIR.glob('*.html')):
+        t = f.read_text()
+        def repl(m):
+            new_body = _transform_block(m.group('slug'), m.group('body'), published)
+            return f'<!--LINK:{m.group("slug")}-->{new_body}<!--/LINK:{m.group("slug")}-->'
+        new = LINK_BLOCK_RE.sub(repl, t)
+        if new != t:
+            f.write_text(new)
+            changed_files += 1
+            if verbose:
+                print(f'  synced links in: {f.relative_to(ROOT)}')
+    if verbose and changed_files == 0:
+        print('  links already in sync')
+    return changed_files
+
+# ----------------------------------------------------------------------------
+
 def publish(slug):
     if slug not in BLOGS:
         print(f'Unknown slug: {slug}')
@@ -247,6 +328,8 @@ def publish(slug):
     r2 = publish_card_in_index(slug);   print(f'  card un-hidden:        {"yes" if r2 else "already visible"}')
     r3 = add_blogposting_jsonld(slug);  print(f'  JSON-LD entry added:   {"yes" if r3 else "already present"}')
     r4 = add_to_sitemap(slug);          print(f'  sitemap entry added:   {"yes" if r4 else "already present"}')
+    print('  syncing cross-blog links:')
+    sync_links()
     print('Done. Commit and push to publish live.')
     return 0
 
@@ -259,6 +342,8 @@ def unpublish(slug):
     r2 = unpublish_card_in_index(slug); print(f'  card hidden:           {"yes" if r2 else "already hidden"}')
     r3 = remove_blogposting_jsonld(slug); print(f'  JSON-LD entry removed: {"yes" if r3 else "not present"}')
     r4 = remove_from_sitemap(slug);     print(f'  sitemap entry removed: {"yes" if r4 else "not present"}')
+    print('  syncing cross-blog links:')
+    sync_links()
     print('Done.')
     return 0
 
@@ -271,6 +356,10 @@ def main():
         return 0
     if args[0] == '--list':
         list_status()
+        return 0
+    if args[0] == '--sync-links':
+        print('Syncing cross-blog links across all blog files:')
+        sync_links()
         return 0
     if args[0] == '--unpublish':
         if len(args) < 2:

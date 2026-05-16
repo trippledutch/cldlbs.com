@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- CloudLabs · v0.3.4 · Blog · Top 10 Hyper-V Cluster Issues -->
+<!-- CloudLabs · v0.3.5 · Blog · Top 10 Hyper-V Cluster Issues -->
 <html lang="en" data-lang="en">
 <head>
 <meta charset="utf-8">
@@ -64,7 +64,7 @@
     {
       "@type":"Question",
       "name":"Does a Health Check impact production?",
-      "acceptedAnswer":{"@type":"Answer","text":"The inventory scripts are read-only and safe to run during business hours. The optional Test-Cluster validation with storage tests must run outside business hours because it temporarily takes LUNs offline. We always schedule that with the customer in advance."}
+      "acceptedAnswer":{"@type":"Answer","text":"The inventory scripts are read-only and run safely during business hours. The optional Test-Cluster validation can also be run on a live production cluster without impact when the storage tests are skipped, or when a dedicated test LUN is available that is not in use by a clustered role. A full storage validation against production CSVs requires those CSVs to be taken offline for the duration of the test, and we always schedule that outside business hours in agreement with the customer."}
     },
     {
       "@type":"Question",
@@ -368,7 +368,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
           <p>A typical engagement for a cluster of up to eight nodes runs two to three working days: one day of PowerShell-based inventory the customer runs themselves, one day of analysis, half a day of reporting and walkthrough.</p>
 
           <div class="faq-q">Does a Health Check impact production?</div>
-          <p>The inventory scripts are read-only and safe to run during business hours. The optional <code>Test-Cluster</code> validation with storage tests must run outside business hours because it temporarily takes LUNs offline. We always schedule that with the customer in advance.</p>
+          <p>The inventory scripts are read-only and run safely during business hours. The optional <code>Test-Cluster</code> validation can also be run on a live production cluster without impact when the storage tests are skipped, or when a dedicated test LUN is available that is not in use by a clustered role. A full storage validation against production CSVs requires those CSVs to be taken offline for the duration of the test, and we always schedule that outside business hours in agreement with the customer.</p>
 
           <div class="faq-q">What is the difference between a Health Check and an audit?</div>
           <p>A Health Check is technical, focused on operational stability, performance, and supportability. An audit is broader and usually covers security and compliance too. We deliver Health Checks; for audits we partner.</p>
@@ -568,7 +568,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
           <p>Een typische opdracht voor een cluster tot acht nodes duurt twee tot drie werkdagen: één dag inventarisatie via PowerShell-scripts die de klant zelf uitvoert, één dag analyse, een halve dag rapportage en presentatie.</p>
 
           <div class="faq-q">Heeft een Health Check impact op productie?</div>
-          <p>De inventarisatie-scripts zijn read-only en kunnen tijdens kantoortijden draaien. De optionele <code>Test-Cluster</code> validatie met storage-tests moet buiten kantoortijden, omdat die LUN's tijdelijk offline neemt. Wij plannen dat altijd vooraf met de klant.</p>
+          <p>De inventarisatie-scripts zijn read-only en draaien zonder impact tijdens kantoortijden. De optionele <code>Test-Cluster</code> validatie kan ook op een productiecluster veilig worden uitgevoerd wanneer de storage-tests worden overgeslagen, of wanneer een aparte test-LUN beschikbaar is die niet door een clusterrol wordt gebruikt. Een volledige storage-validatie op productie-CSV's vereist dat die CSV's tijdelijk offline worden genomen voor de duur van de test, en plannen wij altijd buiten kantoortijden in overleg met de klant.</p>
 
           <div class="faq-q">Wat is het verschil tussen een Health Check en een audit?</div>
           <p>Een Health Check is technisch en gericht op operationele stabiliteit, performance en supportability. Een audit is breder en raakt vaak ook security en compliance. Wij doen Health Checks; voor audits werken we samen met partners.</p>
@@ -598,7 +598,7 @@ Get-PhysicalDisk | Group-Object MediaType, OperationalStatus, FirmwareVersion</c
     <a href="mailto:hans.vredevoort@cldlbs.com">hans.vredevoort@cldlbs.com</a>
     <a href="../book.html" lang="en">Book</a><a href="../book.html" lang="nl">Boek</a>
     <a href="../privacy.html" lang="en">Privacy</a><a href="../privacy.html" lang="nl">Privacy</a>
-    <span class="brand-version">v0.3.4</span>
+    <span class="brand-version">v0.3.5</span>
   </footer>
 
 </div>

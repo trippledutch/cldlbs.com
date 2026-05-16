@@ -1,4 +1,4 @@
-/* CloudLabs · shared stylesheet · v0.2.0 */
+/* CloudLabs · shared stylesheet · v0.2.1 */
 :root{
   --bg:#0a1024;--bg-2:#0f1832;--panel:#121d3a;--panel-2:#162345;
   --line:rgba(120,160,255,.14);--line-strong:rgba(120,160,255,.28);
@@ -256,7 +256,7 @@ p strong{color:var(--ink);font-weight:600}
 
 /* Home specific */
 .home-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:28px;align-items:center;min-height:calc(100vh - 220px)}
-.home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px;max-width:580px}
+.home-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px;max-width:480px}
 .stat{border:1px solid var(--line);background:rgba(255,255,255,.02);border-radius:10px;padding:12px 14px}
 .stat .n{font-family:var(--body);font-size:28px;font-weight:700;color:var(--ink);line-height:1}
 .stat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px;line-height:1.4}
@@ -346,7 +346,7 @@ footer a:hover{color:var(--ink-dim)}
   main{padding:16px 16px 32px}
   .home-grid{grid-template-columns:1fr;gap:14px;align-items:start}
   .hero-visual{display:none}
-  .home-stats{grid-template-columns:repeat(3,1fr);max-width:none;margin-top:14px;gap:6px}
+  .home-stats{grid-template-columns:repeat(2,1fr);max-width:none;margin-top:14px;gap:6px}
   .stat{padding:9px 10px}
   .stat .n{font-size:22px}
   h1{font-size:28px}

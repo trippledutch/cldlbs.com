@@ -190,6 +190,10 @@ def remove_blogposting_jsonld(slug):
     new = re.sub(r'\[\s*,', '[', new)
     new = re.sub(r',\s*,', ',', new)
     new = re.sub(r',(\s*\])', r'\1', new)
+    # Collapse blank lines left behind inside the blogPost array
+    new = re.sub(r'("blogPost":\[)(.*?)(\s*\])',
+                 lambda m: m.group(1) + re.sub(r'\n\s*\n+', '\n', m.group(2)) + m.group(3),
+                 new, count=1, flags=re.DOTALL)
     if n == 0:
         return False
     INDEX.write_text(new)

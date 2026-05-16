@@ -346,7 +346,7 @@ Test-Cluster -Cluster $ClusterName -Include 'Inventory','Network' `
 Write-Host "Post-update tasks completed"
 '@</code></pre>
 
-        <p>Register with <code>Set-CauClusterRole -PostUpdateScript</code>. This automatically fixes the CSV imbalance that otherwise stays behind after every patch round. See <a href="csv-ownership-imbalance.html">CSV ownership imbalance</a> for broader context.</p>
+        <p>Register with <code>Set-CauClusterRole -PostUpdateScript</code>. This automatically fixes the CSV imbalance that otherwise stays behind after every patch round. See <!--LINK:csv-ownership-imbalance--><!--draft:<a href="csv-ownership-imbalance.html">CSV ownership imbalance</a>-->CSV ownership imbalance<!--/LINK:csv-ownership-imbalance--> for broader context.</p>
 
         <p><strong>What we do not do in pre/post tasks:</strong></p>
         <p>No Hyper-V Replica handling. Replica synchronisation during patching is handled separately in the runbook, not automatically in CAU. That is intentional, because we want explicit control over Replica state.</p>
@@ -354,7 +354,7 @@ Write-Host "Post-update tasks completed"
 
         <h2 id="en-6">6. CAU on Windows Server 2025, what changes</h2>
         <p>Windows Server 2025 brings several changes to CAU worth considering.</p>
-        <p><strong>Hot-patching integration.</strong> Patches that are hot-patchable (see <a href="windows-server-2025-hyper-v-cluster-features.html">Windows Server 2025 Hyper-V</a>) run much faster through a CAU run because they require no reboot. A monthly CAU run that took four hours on WS 2022 for a four-node cluster often drops to one and a half hours on WS 2025, with larger reboot windows on quarterly basis for the non-hot-patchable updates.</p>
+        <p><strong>Hot-patching integration.</strong> Patches that are hot-patchable (see <!--LINK:windows-server-2025-hyper-v-cluster-features--><!--draft:<a href="windows-server-2025-hyper-v-cluster-features.html">Windows Server 2025 Hyper-V</a>-->Windows Server 2025 Hyper-V<!--/LINK:windows-server-2025-hyper-v-cluster-features-->) run much faster through a CAU run because they require no reboot. A monthly CAU run that took four hours on WS 2022 for a four-node cluster often drops to one and a half hours on WS 2025, with larger reboot windows on quarterly basis for the non-hot-patchable updates.</p>
         <p><strong>Azure Update Manager as alternative.</strong> For Arc-enabled Hyper-V hosts you can use Azure Update Manager instead of CAU. That orchestrates from the Azure portal and gives a central audit trail through Azure Monitor. For customers with multiple clusters in different sites this is operationally easier than per-cluster CAU configuration. However: it is a different tool, with different abstractions, and the runbook must be adapted accordingly.</p>
         <p><strong>Improved reporting.</strong> <code>Get-CauReport</code> in WS 2025 delivers slightly richer output, with explicit logging of which patches were applied via hot-patch and which were not. That helps with troubleshooting regressions.</p>
         <p><strong>Backward compatibility.</strong> CAU configuration from WS 2022 is automatically carried over during a cluster rolling upgrade. Existing pre/post scripts keep working. No reconfiguration needed after the upgrade, provided the scripts had no hard-coded versions.</p>
@@ -564,7 +564,7 @@ Test-Cluster -Cluster $ClusterName -Include 'Inventory','Network' `
 Write-Host "Post-update tasks completed"
 '@</code></pre>
 
-        <p>Registreer met <code>Set-CauClusterRole -PostUpdateScript</code>. Dit fixt automatisch de CSV-onbalans die anders na elke patch-ronde achterblijft. Zie <a href="csv-ownership-imbalance.html">CSV ownership-onbalans</a> voor de bredere context.</p>
+        <p>Registreer met <code>Set-CauClusterRole -PostUpdateScript</code>. Dit fixt automatisch de CSV-onbalans die anders na elke patch-ronde achterblijft. Zie <!--LINK:csv-ownership-imbalance--><!--draft:<a href="csv-ownership-imbalance.html">CSV ownership-onbalans</a>-->CSV ownership-onbalans<!--/LINK:csv-ownership-imbalance--> voor de bredere context.</p>
 
         <p><strong>Wat we niet doen in pre/post-tasks:</strong></p>
         <p>Geen Hyper-V Replica handling. Replica-synchronisatie tijdens patching wordt apart afgehandeld in het runbook, niet automatisch in CAU. Dat is bewust, omdat we expliciete controle willen over Replica state.</p>
@@ -572,7 +572,7 @@ Write-Host "Post-update tasks completed"
 
         <h2 id="nl-6">6. CAU op Windows Server 2025, wat verandert</h2>
         <p>Windows Server 2025 brengt enkele veranderingen aan CAU die het overwegen waard zijn.</p>
-        <p><strong>Hot-patching integratie.</strong> Patches die hot-patchable zijn (zie <a href="windows-server-2025-hyper-v-cluster-features.html">Windows Server 2025 Hyper-V</a>) lopen veel sneller door een CAU-run, omdat ze geen reboot vereisen. Een maandelijkse CAU-run die op WS 2022 vier uur kostte voor een vier-node cluster, komt op WS 2025 vaak terug op anderhalf uur, met grotere reboot-windows op kwartaalbasis voor de niet-hot-patchable updates.</p>
+        <p><strong>Hot-patching integratie.</strong> Patches die hot-patchable zijn (zie <!--LINK:windows-server-2025-hyper-v-cluster-features--><!--draft:<a href="windows-server-2025-hyper-v-cluster-features.html">Windows Server 2025 Hyper-V</a>-->Windows Server 2025 Hyper-V<!--/LINK:windows-server-2025-hyper-v-cluster-features-->) lopen veel sneller door een CAU-run, omdat ze geen reboot vereisen. Een maandelijkse CAU-run die op WS 2022 vier uur kostte voor een vier-node cluster, komt op WS 2025 vaak terug op anderhalf uur, met grotere reboot-windows op kwartaalbasis voor de niet-hot-patchable updates.</p>
         <p><strong>Azure Update Manager als alternatief.</strong> Voor Arc-enabled Hyper-V hosts kun je in plaats van CAU ook Azure Update Manager gebruiken. Dat orkestreert vanuit Azure-portal en geeft een centrale audit-trail uit Azure Monitor. Voor klanten met meerdere clusters in verschillende sites is dit operationeel comfortabeler dan per-cluster CAU-configuratie. Wel: het is een andere tool, met andere abstracties, en de runbook moet daarop aangepast.</p>
         <p><strong>Verbeterde reporting.</strong> <code>Get-CauReport</code> in WS 2025 levert iets rijkere output, met expliciete logging van welke patches via hot-patch zijn toegepast en welke niet. Dat helpt bij troubleshooting van regressies.</p>
         <p><strong>Backward compatibility.</strong> CAU-configuratie van WS 2022 wordt automatisch overgenomen tijdens een cluster rolling upgrade. Bestaande pre/post-scripts blijven werken. Geen herconfiguratie nodig na de upgrade, mits de scripts geen hard-coded versies hadden.</p>
@@ -624,11 +624,11 @@ Write-Host "Post-update tasks completed"
       <div class="related">
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
-          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
-          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership-onbalans, oorzaken en oplossingen</span></a></li>
-          <li><a href="windows-server-2025-hyper-v-cluster-features.html"><span lang="en">Windows Server 2025 Hyper-V, what it adds for cluster operators</span><span lang="nl">Windows Server 2025 Hyper-V, wat het toevoegt voor cluster operators</span></a></li>
-          <li><a href="hyper-v-time-drift-kerberos-csv.html"><span lang="en">Time drift in Hyper-V clusters</span><span lang="nl">Time drift in Hyper-V clusters</span></a></li>
-          <li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>
+          <!--LINK:top-10-hyper-v-cluster-issues--><li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li><!--/LINK:top-10-hyper-v-cluster-issues-->
+          <!--LINK:csv-ownership-imbalance--><!--draft:<li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership-onbalans, oorzaken en oplossingen</span></a></li>--><!--/LINK:csv-ownership-imbalance-->
+          <!--LINK:windows-server-2025-hyper-v-cluster-features--><!--draft:<li><a href="windows-server-2025-hyper-v-cluster-features.html"><span lang="en">Windows Server 2025 Hyper-V, what it adds for cluster operators</span><span lang="nl">Windows Server 2025 Hyper-V, wat het toevoegt voor cluster operators</span></a></li>--><!--/LINK:windows-server-2025-hyper-v-cluster-features-->
+          <!--LINK:hyper-v-time-drift-kerberos-csv--><!--draft:<li><a href="hyper-v-time-drift-kerberos-csv.html"><span lang="en">Time drift in Hyper-V clusters</span><span lang="nl">Time drift in Hyper-V clusters</span></a></li>--><!--/LINK:hyper-v-time-drift-kerberos-csv-->
+          <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>--><!--/LINK:vmware-to-hyper-v-migration-assessment-->
         </ul>
       </div>
     </article>

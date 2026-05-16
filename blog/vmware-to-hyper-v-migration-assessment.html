@@ -245,13 +245,13 @@
         <p><strong>Our CSV design guidelines during a pre-migration assessment:</strong></p>
         <ul>
           <li><strong>CSVs per workload type, not per VMware datastore.</strong> One CSV for fileserver VMs, one for database VMs, one for general Windows Server VMs. This enables later capacity planning, snapshot strategy, and per-CSV performance tuning.</li>
-          <li><strong>Number of CSVs equal to or just above the number of nodes</strong>, for automatic balancing. On a four-node cluster, four to six CSVs work better than twelve, because the balancer finds even distribution more easily. See <a href="csv-ownership-imbalance.html">CSV ownership imbalance</a> for what happens when this goes wrong.</li>
+          <li><strong>Number of CSVs equal to or just above the number of nodes</strong>, for automatic balancing. On a four-node cluster, four to six CSVs work better than twelve, because the balancer finds even distribution more easily. See <!--LINK:csv-ownership-imbalance--><!--draft:<a href="csv-ownership-imbalance.html">CSV ownership imbalance</a>-->CSV ownership imbalance<!--/LINK:csv-ownership-imbalance--> for what happens when this goes wrong.</li>
           <li><strong>CSV size around 4 to 8 TB</strong> for SAN-attached clusters. Above 10 TB, volume operations (chkdsk, backup snapshot recovery) become operationally unwieldy.</li>
           <li><strong>Plan anti-affinity and CSV placement together.</strong> Two DCs on the same CSV but forced onto different nodes still leaves a single point of failure at the storage layer. Document both.</li>
         </ul>
 
         <p><strong>For customers moving from VMware vSAN to Hyper-V on SAN:</strong></p>
-        <p>A fundamental architectural shift: vSAN was hyperconverged, SAN-attached Hyper-V is not. Storage and compute paths are now separate, MPIO and zoning come back into play, and backup strategies that leaned on vSAN snapshots need to be reworked. For customers preferring to stay hyperconverged, <a href="azure-local-migration-readiness.html">Azure Local</a> is a parallel track with its own readiness assessment.</p>
+        <p>A fundamental architectural shift: vSAN was hyperconverged, SAN-attached Hyper-V is not. Storage and compute paths are now separate, MPIO and zoning come back into play, and backup strategies that leaned on vSAN snapshots need to be reworked. For customers preferring to stay hyperconverged, <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local</a>-->Azure Local<!--/LINK:azure-local-migration-readiness--> is a parallel track with its own readiness assessment.</p>
 
         <h2 id="en-5">5. Step 4, guest readiness and driver strategy</h2>
         <p>The VMs themselves need to be ready for Hyper-V. Biggest pitfalls:</p>
@@ -400,13 +400,13 @@
         <p><strong>Onze CSV-ontwerprichtlijnen tijdens een pre-migration assessment:</strong></p>
         <ul>
           <li><strong>CSV's per workload-type, niet per VMware datastore.</strong> Eén CSV voor file-server VM's, één voor database-VM's, één voor algemene Windows Server VM's. Dit maakt latere capaciteits-planning, snapshot-strategie en performance-tuning per CSV mogelijk.</li>
-          <li><strong>Aantal CSV's gelijk aan of net boven het aantal nodes</strong>, voor automatische balancing. Op een vier-node cluster werkt vier tot zes CSV's beter dan twaalf, omdat de balancer dan makkelijker een gelijkmatige verdeling vindt. Zie <a href="csv-ownership-imbalance.html">CSV ownership onbalans</a> voor de gevolgen wanneer dit fout gaat.</li>
+          <li><strong>Aantal CSV's gelijk aan of net boven het aantal nodes</strong>, voor automatische balancing. Op een vier-node cluster werkt vier tot zes CSV's beter dan twaalf, omdat de balancer dan makkelijker een gelijkmatige verdeling vindt. Zie <!--LINK:csv-ownership-imbalance--><!--draft:<a href="csv-ownership-imbalance.html">CSV ownership onbalans</a>-->CSV ownership onbalans<!--/LINK:csv-ownership-imbalance--> voor de gevolgen wanneer dit fout gaat.</li>
           <li><strong>CSV-grootte rond 4 tot 8 TB</strong> voor SAN-attached clusters. Boven 10 TB worden volume-acties (chkdsk, backup-snapshot recovery) operationeel onhandelbaar.</li>
           <li><strong>Anti-affinity en CSV-toewijzing samen plannen.</strong> Twee DC's op dezelfde CSV maar geforceerd op verschillende nodes, levert nog steeds een single-point-of-failure op de storage-laag. Documenteer beide.</li>
         </ul>
 
         <p><strong>Voor klanten met VMware vSAN die naar Hyper-V op SAN gaan:</strong></p>
-        <p>Een fundamentele architecturele keuze: vSAN was hyperconverged, SAN-attached Hyper-V is niet. De storage- en compute-paden zijn nu apart, MPIO en zoning komen weer in beeld, en backup-strategieën die op vSAN-snapshots leunden moeten herzien worden. Voor klanten die liever hyperconverged blijven, is <a href="azure-local-migration-readiness.html">Azure Local</a> een aanvullend traject met eigen readiness-assessment.</p>
+        <p>Een fundamentele architecturele keuze: vSAN was hyperconverged, SAN-attached Hyper-V is niet. De storage- en compute-paden zijn nu apart, MPIO en zoning komen weer in beeld, en backup-strategieën die op vSAN-snapshots leunden moeten herzien worden. Voor klanten die liever hyperconverged blijven, is <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local</a>-->Azure Local<!--/LINK:azure-local-migration-readiness--> een aanvullend traject met eigen readiness-assessment.</p>
 
         <h2 id="nl-5">5. Stap 4, guest readiness en driver-strategie</h2>
         <p>De VM's zelf moeten klaar zijn voor Hyper-V. De grootste valkuilen:</p>
@@ -498,10 +498,10 @@
       <div class="related">
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
-          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
-          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
-          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership onbalans, oorzaken en oplossingen</span></a></li>
-          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
+          <!--LINK:top-10-hyper-v-cluster-issues--><li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li><!--/LINK:top-10-hyper-v-cluster-issues-->
+          <!--LINK:azure-local-migration-readiness--><!--draft:<li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>--><!--/LINK:azure-local-migration-readiness-->
+          <!--LINK:csv-ownership-imbalance--><!--draft:<li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership onbalans, oorzaken en oplossingen</span></a></li>--><!--/LINK:csv-ownership-imbalance-->
+          <!--LINK:live-migration-wrong-network--><!--draft:<li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>--><!--/LINK:live-migration-wrong-network-->
         </ul>
       </div>
     </article>

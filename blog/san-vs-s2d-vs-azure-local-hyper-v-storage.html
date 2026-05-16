@@ -214,7 +214,7 @@
         <h2 id="en-1">1. The three architectures at a glance</h2>
         <p><strong>SAN-attached Hyper-V.</strong> Classic model with separate compute and storage layers. A dedicated storage array (Dell PowerStore, HPE Alletra, NetApp AFF, Pure Storage, IBM FlashSystem, or similar) delivers block storage over Fibre Channel, iSCSI, or Shared SAS. Hyper-V hosts see the LUNs as CSVs. Compute and storage scale independently.</p>
         <p><strong>Storage Spaces Direct (S2D).</strong> Hyperconverged on Windows Server 2019, 2022, or 2025. Local NVMe or SSD per node, pooled across an RDMA network into shared storage. No external array required, compute and storage scale together per node.</p>
-        <p><strong>Azure Local.</strong> Microsoft's modern hyperconverged platform (previously Azure Stack HCI), built on S2D technology but with Azure management, per-core licensing through an Azure subscription, and integration with Azure services like Site Recovery and Update Manager. See <a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a> for the full approach.</p>
+        <p><strong>Azure Local.</strong> Microsoft's modern hyperconverged platform (previously Azure Stack HCI), built on S2D technology but with Azure management, per-core licensing through an Azure subscription, and integration with Azure services like Site Recovery and Update Manager. See <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a>-->Azure Local migration readiness checklist<!--/LINK:azure-local-migration-readiness--> for the full approach.</p>
         <p>At the hardware level, the difference between S2D and Azure Local lives in the Solutions Catalog and the licensing form, not in fundamental architecture. Operationally however, they are two distinct products with distinct toolchains.</p>
 
         <h2 id="en-2">2. When SAN is still the right choice</h2>
@@ -265,7 +265,7 @@
           <li>Customers wanting to stay on SAN for strategic reasons and explicitly choosing not to make the hyperconverged shift.</li>
         </ul>
 
-        <p>For the full readiness assessment specific to Azure Local, see the <a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a> article.</p>
+        <p>For the full readiness assessment specific to Azure Local, see the <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a>-->Azure Local migration readiness checklist<!--/LINK:azure-local-migration-readiness--> article.</p>
 
         <h2 id="en-5">5. Cost comparison, honestly across the full lifecycle</h2>
         <p>Marketing comparisons between storage architectures are notoriously skewed. The table below is what we use in CloudLabs assessments as a first-order estimate for a typical four-node Hyper-V cluster with 128 cores total and 200 TB usable storage. Numbers are relative indication, exact amounts vary widely by region and vendor.</p>
@@ -357,14 +357,14 @@
         <p>Moving between architectures is not a small operation. Practical options:</p>
         <ul>
           <li><strong>From SAN to S2D on Windows Server.</strong> Build a new S2D cluster alongside the existing SAN cluster. Migrate VMs through Live Migration (if both are in the same domain) or Hyper-V Replica followed by failover. Decommission the SAN after verification. No in-place upgrade possible.</li>
-          <li><strong>From SAN to Azure Local.</strong> Similar path to S2D, with the additional Azure Local readiness steps. See <a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a> for the full procedure.</li>
+          <li><strong>From SAN to Azure Local.</strong> Similar path to S2D, with the additional Azure Local readiness steps. See <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migration readiness checklist</a>-->Azure Local migration readiness checklist<!--/LINK:azure-local-migration-readiness--> for the full procedure.</li>
           <li><strong>From S2D on Windows Server to Azure Local.</strong> From Azure Stack HCI 22H2 there is an in-place upgrade path. From S2D on Windows Server 2022 the path is more complex and we recommend building a new Azure Local cluster alongside the existing one and migrating VMs. Hardware validation against the Azure Local Solutions Catalog is a mandatory intermediate step.</li>
           <li><strong>From HCI back to SAN.</strong> This happens rarely but it can. Build a SAN cluster, migrate VMs through Live Migration or restore. Arguments are usually financial (HCI cost more than expected) or operational (HCI skills proved too scarce).</li>
         </ul>
 
         <p><strong>What we plan as standard in all migration paths:</strong></p>
         <ul>
-          <li>Capacity modelling on the target cluster (see the <a href="vmware-to-hyper-v-migration-assessment.html">VMware to Hyper-V pre-migration assessment</a> methodology, comparable for cross-storage migrations).</li>
+          <li>Capacity modelling on the target cluster (see the <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<a href="vmware-to-hyper-v-migration-assessment.html">VMware to Hyper-V pre-migration assessment</a>-->VMware to Hyper-V pre-migration assessment<!--/LINK:vmware-to-hyper-v-migration-assessment--> methodology, comparable for cross-storage migrations).</li>
           <li>Backup strategy revalidation. Backup tooling must correctly support the target architecture, and CSV backup modes differ between SAN and S2D.</li>
           <li>Cutover window planning with explicit rollback criteria. No migration without a clear "when do we stop" trigger.</li>
         </ul>
@@ -438,7 +438,7 @@
         <h2 id="nl-1">1. De drie architecturen in vogelvlucht</h2>
         <p><strong>SAN-attached Hyper-V.</strong> Klassiek model met aparte compute- en storage-lagen. Een dedicated storage-array (Dell PowerStore, HPE Alletra, NetApp AFF, Pure Storage, IBM FlashSystem, of een vergelijkbaar product) levert block-storage via Fibre Channel, iSCSI of Shared SAS. Hyper-V hosts zien de LUN's als CSV's. Compute en storage schalen onafhankelijk.</p>
         <p><strong>Storage Spaces Direct (S2D).</strong> Hyperconverged op Windows Server 2019, 2022 of 2025. Lokale NVMe of SSD per node, samengevoegd over RDMA-netwerk tot een gedeelde storage-pool. Geen externe array nodig, compute en storage schalen samen per node.</p>
-        <p><strong>Azure Local.</strong> Microsofts moderne hyperconverged platform (voorheen Azure Stack HCI), gebouwd op S2D-technologie maar met Azure-management, per-core licentie via Azure-subscription, en integratie met Azure-diensten zoals Site Recovery en Update Manager. Zie <a href="azure-local-migration-readiness.html">Azure Local migratie readiness checklist</a> voor de volledige aanvliegroute.</p>
+        <p><strong>Azure Local.</strong> Microsofts moderne hyperconverged platform (voorheen Azure Stack HCI), gebouwd op S2D-technologie maar met Azure-management, per-core licentie via Azure-subscription, en integratie met Azure-diensten zoals Site Recovery en Update Manager. Zie <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migratie readiness checklist</a>-->Azure Local migratie readiness checklist<!--/LINK:azure-local-migration-readiness--> voor de volledige aanvliegroute.</p>
         <p>Op hardware-niveau zit het verschil tussen S2D en Azure Local in de Solutions Catalog en de licentievorm, niet in fundamentele architectuur. Maar operationeel zijn het twee verschillende producten met verschillende toolchains.</p>
 
         <h2 id="nl-2">2. Wanneer SAN nog steeds de juiste keuze is</h2>
@@ -489,7 +489,7 @@
           <li>Klanten die op SAN willen blijven om strategische redenen, en de hyperconverged shift expliciet niet willen maken.</li>
         </ul>
 
-        <p>Voor de volledige readiness-assessment specifiek voor Azure Local, zie het <a href="azure-local-migration-readiness.html">Azure Local migratie readiness checklist</a> artikel.</p>
+        <p>Voor de volledige readiness-assessment specifiek voor Azure Local, zie het <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migratie readiness checklist</a>-->Azure Local migratie readiness checklist<!--/LINK:azure-local-migration-readiness--> artikel.</p>
 
         <h2 id="nl-5">5. Kostenvergelijking, eerlijk over de hele lifecycle</h2>
         <p>Marketing-vergelijkingen tussen storage-architecturen zijn berucht ongelijk. Onderstaande tabel is wat wij in CloudLabs-assessments hanteren als eerste-orde schatting voor een typische four-node Hyper-V cluster met 128 cores totaal en 200 TB usable storage. Cijfers zijn relatieve indicatie, exacte bedragen variëren sterk per regio en per vendor.</p>
@@ -581,14 +581,14 @@
         <p>Bewegen tussen architecturen is geen kleine operatie. De praktische opties:</p>
         <ul>
           <li><strong>Van SAN naar S2D op Windows Server.</strong> Bouw een nieuwe S2D-cluster naast de bestaande SAN-cluster. Migreer VM's via Live Migration (als beide in hetzelfde domein zitten) of via Hyper-V Replica gevolgd door failover. Decommissioneer de SAN na verificatie. Geen in-place upgrade mogelijk.</li>
-          <li><strong>Van SAN naar Azure Local.</strong> Vergelijkbaar pad als naar S2D, maar met de aanvullende Azure Local readiness-stappen. Zie <a href="azure-local-migration-readiness.html">Azure Local migratie readiness checklist</a> voor de volledige procedure.</li>
+          <li><strong>Van SAN naar Azure Local.</strong> Vergelijkbaar pad als naar S2D, maar met de aanvullende Azure Local readiness-stappen. Zie <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local migratie readiness checklist</a>-->Azure Local migratie readiness checklist<!--/LINK:azure-local-migration-readiness--> voor de volledige procedure.</li>
           <li><strong>Van S2D op Windows Server naar Azure Local.</strong> Vanaf Azure Stack HCI 22H2 bestaat er een in-place upgrade-pad. Vanaf S2D op Windows Server 2022 is het pad ingewikkelder en wij adviseren een nieuwe Azure Local cluster te bouwen naast het bestaande, en VM's te migreren. Hardware-validatie tegen de Azure Local Solutions Catalog is een verplichte tussenstap.</li>
           <li><strong>Van HCI terug naar SAN.</strong> Dit gebeurt zelden maar het kan. Bouw een SAN-cluster, migreer VM's via Live Migration of restore. Argumenten zijn meestal financieel (HCI kwam duurder uit dan verwacht) of operationeel (HCI-skills bleken te schaars).</li>
         </ul>
 
         <p><strong>Wat we in alle migratie-paden standaard plannen:</strong></p>
         <ul>
-          <li>Capaciteits-modellering op het doel-cluster (zie de <a href="vmware-to-hyper-v-migration-assessment.html">VMware-naar-Hyper-V pre-migration assessment</a> methodiek, vergelijkbaar voor cross-storage migraties).</li>
+          <li>Capaciteits-modellering op het doel-cluster (zie de <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<a href="vmware-to-hyper-v-migration-assessment.html">VMware-naar-Hyper-V pre-migration assessment</a>-->VMware-naar-Hyper-V pre-migration assessment<!--/LINK:vmware-to-hyper-v-migration-assessment--> methodiek, vergelijkbaar voor cross-storage migraties).</li>
           <li>Backup-strategie revalidatie. Backup-tooling moet de doel-architectuur correct ondersteunen, en CSV-backup-modi verschillen tussen SAN en S2D.</li>
           <li>Cutover-window planning met expliciete rollback-criteria. Geen migratie zonder duidelijke "wanneer stoppen we" trigger.</li>
         </ul>
@@ -639,11 +639,11 @@
       <div class="related">
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
-          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
-          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
-          <li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>
-          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership onbalans, oorzaken en oplossingen</span></a></li>
-          <li><a href="windows-server-2025-hyper-v-cluster-features.html"><span lang="en">Windows Server 2025 Hyper-V, what it adds for cluster operators</span><span lang="nl">Windows Server 2025 Hyper-V, wat het toevoegt voor cluster operators</span></a></li>
+          <!--LINK:top-10-hyper-v-cluster-issues--><li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li><!--/LINK:top-10-hyper-v-cluster-issues-->
+          <!--LINK:azure-local-migration-readiness--><!--draft:<li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>--><!--/LINK:azure-local-migration-readiness-->
+          <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>--><!--/LINK:vmware-to-hyper-v-migration-assessment-->
+          <!--LINK:csv-ownership-imbalance--><!--draft:<li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance, causes and fixes</span><span lang="nl">CSV ownership onbalans, oorzaken en oplossingen</span></a></li>--><!--/LINK:csv-ownership-imbalance-->
+          <!--LINK:windows-server-2025-hyper-v-cluster-features--><!--draft:<li><a href="windows-server-2025-hyper-v-cluster-features.html"><span lang="en">Windows Server 2025 Hyper-V, what it adds for cluster operators</span><span lang="nl">Windows Server 2025 Hyper-V, wat het toevoegt voor cluster operators</span></a></li>--><!--/LINK:windows-server-2025-hyper-v-cluster-features-->
         </ul>
       </div>
     </article>

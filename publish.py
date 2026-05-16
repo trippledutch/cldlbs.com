@@ -297,6 +297,71 @@ def _transform_block(slug, body, published_slugs):
     return body
 
 
+def wrap_links(verbose=True):
+    """Walk every blog file and wrap any unmarked cross-blog references.
+
+    Looks for <a href="<slug>.html"> inside blog files where <slug> is a known
+    blog (in BLOGS) and the anchor is not already inside a LINK marker. Wraps:
+      - <li>...<a href="slug.html">...</a>...</li>  -> wraps the entire <li>
+      - <a href="slug.html">...</a>                 -> wraps the anchor inline
+    Self-links (link target == current file) are skipped.
+    """
+    slugs = set(BLOGS.keys())
+    # Build a single alternation for known slugs to avoid wrapping unrelated links.
+    slug_alt = '|'.join(re.escape(s) for s in slugs)
+    # Pattern for an <li> containing exactly one cross-blog anchor.
+    li_re = re.compile(
+        r'(?P<full><li>\s*<a href="(?P<slug>' + slug_alt + r')\.html">.*?</a>\s*</li>)',
+        re.DOTALL,
+    )
+    # Pattern for a bare anchor.
+    a_re = re.compile(
+        r'(?P<full><a href="(?P<slug>' + slug_alt + r')\.html">.*?</a>)',
+        re.DOTALL,
+    )
+    changed_files = 0
+    for f in sorted(BLOG_DIR.glob('*.html')):
+        self_slug = f.stem
+        t = f.read_text()
+        original = t
+        # Pass 1: wrap <li> blocks first (so the inner anchor is consumed and
+        # not double-wrapped by pass 2).
+        def li_repl(m):
+            slug = m.group('slug')
+            if slug == self_slug:
+                return m.group('full')
+            # Skip if already inside a LINK marker
+            start = m.start()
+            preceding = t[max(0, start - 80):start]
+            if f'<!--LINK:{slug}-->' in preceding and '<!--/LINK:' not in preceding.split(f'<!--LINK:{slug}-->')[-1]:
+                return m.group('full')
+            return f'<!--LINK:{slug}-->{m.group("full")}<!--/LINK:{slug}-->'
+        t = li_re.sub(li_repl, t)
+        # Pass 2: wrap remaining bare anchors. Need to re-check "already wrapped"
+        # against the *updated* text.
+        def a_repl(m):
+            slug = m.group('slug')
+            if slug == self_slug:
+                return m.group('full')
+            start = m.start()
+            # Look behind for an unmatched <!--LINK:slug--> marker
+            preceding = t[max(0, start - 80):start]
+            last_open = preceding.rfind(f'<!--LINK:{slug}-->')
+            last_close = preceding.rfind(f'<!--/LINK:{slug}-->')
+            if last_open > last_close:
+                return m.group('full')  # already wrapped
+            return f'<!--LINK:{slug}-->{m.group("full")}<!--/LINK:{slug}-->'
+        t = a_re.sub(a_repl, t)
+        if t != original:
+            f.write_text(t)
+            changed_files += 1
+            if verbose:
+                print(f'  wrapped links in: {f.relative_to(ROOT)}')
+    if verbose and changed_files == 0:
+        print('  no unwrapped cross-blog links found')
+    return changed_files
+
+
 def sync_links(verbose=True):
     """Walk every blog file and update cross-blog link visibility."""
     published = {s for s in BLOGS if is_published(s)}
@@ -359,6 +424,12 @@ def main():
         return 0
     if args[0] == '--sync-links':
         print('Syncing cross-blog links across all blog files:')
+        sync_links()
+        return 0
+    if args[0] == '--wrap-links':
+        print('Wrapping unmarked cross-blog links across all blog files:')
+        wrap_links()
+        print('Syncing cross-blog links:')
         sync_links()
         return 0
     if args[0] == '--unpublish':

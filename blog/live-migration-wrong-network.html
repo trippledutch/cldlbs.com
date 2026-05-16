@@ -223,7 +223,7 @@
           <li><strong>SMB Multichannel sessions in unexpected places.</strong> If LM is on SMB (default since WS2016) but has no clean RDMA path, it falls back to plain TCP-over-SMB on whatever interface is reachable.</li>
         </ul>
 
-        <p>The cluster is healthy in all these scenarios by standard monitoring criteria. <code>Test-Cluster</code> passes. Failover Cluster Manager is green. The only correlation is timing. That is precisely why this is a typical Hyper-V Cluster Health Check finding, not something reactive monitoring catches. See <a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</a> for the wider pattern.</p>
+        <p>The cluster is healthy in all these scenarios by standard monitoring criteria. <code>Test-Cluster</code> passes. Failover Cluster Manager is green. The only correlation is timing. That is precisely why this is a typical Hyper-V Cluster Health Check finding, not something reactive monitoring catches. See <!--LINK:top-10-hyper-v-cluster-issues--><a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</a><!--/LINK:top-10-hyper-v-cluster-issues--> for the wider pattern.</p>
 
         <h2 id="en-3">3. Verifying the path in use</h2>
         <p>Verification requires a live test. Inspecting configuration alone is not enough because the three layers interact in non-obvious ways. The procedure CloudLabs uses during a Health Check:</p>
@@ -421,7 +421,7 @@ Get-SmbMultichannelConnection         # Session detail</code></pre>
           <li><strong>SMB Multichannel-sessies op onverwachte plekken.</strong> Als LM op SMB staat (default vanaf WS2016) maar geen schoon RDMA-pad heeft, valt het terug op gewone TCP-over-SMB op welke interface dan ook bereikbaar is.</li>
         </ul>
 
-        <p>Het cluster is in al deze scenario's gezond volgens reguliere monitoring-criteria. <code>Test-Cluster</code> komt door. Failover Cluster Manager staat groen. De enige correlatie is timing. Dat is precies waarom dit een typische Hyper-V Cluster Health Check bevinding is, en niet iets wat reactieve monitoring oppakt. Zie ook <a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</a> voor het bredere patroon.</p>
+        <p>Het cluster is in al deze scenario's gezond volgens reguliere monitoring-criteria. <code>Test-Cluster</code> komt door. Failover Cluster Manager staat groen. De enige correlatie is timing. Dat is precies waarom dit een typische Hyper-V Cluster Health Check bevinding is, en niet iets wat reactieve monitoring oppakt. Zie ook <!--LINK:top-10-hyper-v-cluster-issues--><a href="top-10-hyper-v-cluster-issues.html">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</a><!--/LINK:top-10-hyper-v-cluster-issues--> voor het bredere patroon.</p>
 
         <h2 id="nl-3">3. Het gebruikte pad verifiëren</h2>
         <p>Verificatie vraagt een live test. Alleen configuratie inspecteren is niet voldoende omdat de drie lagen op niet-evidente manieren op elkaar inwerken. De procedure die CloudLabs tijdens een Health Check gebruikt:</p>
@@ -583,10 +583,10 @@ Get-SmbMultichannelConnection         # Sessiedetails</code></pre>
       <div class="related">
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
-          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
-          <li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership onbalans: oorzaken en oplossingen</span></a></li>
-          <li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>
-          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
+          <!--LINK:top-10-hyper-v-cluster-issues--><li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li><!--/LINK:top-10-hyper-v-cluster-issues-->
+          <!--LINK:csv-ownership-imbalance--><!--draft:<li><a href="csv-ownership-imbalance.html"><span lang="en">CSV ownership imbalance: causes and fixes</span><span lang="nl">CSV ownership onbalans: oorzaken en oplossingen</span></a></li>--><!--/LINK:csv-ownership-imbalance-->
+          <!--LINK:cluster-witness-comparison--><!--draft:<li><a href="cluster-witness-comparison.html"><span lang="en">File Share Witness vs Cloud Witness vs Disk Witness</span><span lang="nl">File Share Witness vs Cloud Witness vs Disk Witness</span></a></li>--><!--/LINK:cluster-witness-comparison-->
+          <!--LINK:azure-local-migration-readiness--><!--draft:<li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>--><!--/LINK:azure-local-migration-readiness-->
         </ul>
       </div>
     </article>

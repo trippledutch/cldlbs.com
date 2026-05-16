@@ -215,7 +215,7 @@
           <li><strong>vTPM 2.0 by default.</strong> Trusted Platform Module for VMs ships by default, with implications for backup, replication, and DR.</li>
           <li><strong>Hot-patching for Hyper-V hosts.</strong> Certain patches without reboot, limited scope but enough to noticeably shorten patch windows.</li>
         </ul>
-        <p>Beyond these four, there are improvements to SDN, AKS on Hyper-V integration, and storage replica, but those are secondary for most customers until <a href="azure-local-migration-readiness.html">Azure Local</a> enters the conversation. We deliver a separate readiness assessment for that.</p>
+        <p>Beyond these four, there are improvements to SDN, AKS on Hyper-V integration, and storage replica, but those are secondary for most customers until <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local</a>-->Azure Local<!--/LINK:azure-local-migration-readiness--> enters the conversation. We deliver a separate readiness assessment for that.</p>
 
         <h2 id="en-2">2. Dynamic CPU compatibility for Live Migration</h2>
         <p>This is the feature operators in existing heterogeneous clusters notice the most.</p>
@@ -314,7 +314,7 @@ Get-VM | Select-Object Name, Generation,
         <p>For customers who must keep 2012 R2 VMs running temporarily on a 2025 cluster, there is a manual registry trick to alias the old device IDs. Didier Van Hoye has written an excellent article explaining the offline registry edit procedure. It is a workaround, not a solution.</p>
 
         <p><strong>The right fix:</strong></p>
-        <p>Plan the OS upgrade of legacy guests before or alongside the Hyper-V host upgrade. For customers <a href="vmware-to-hyper-v-migration-assessment.html">migrating from VMware to Hyper-V</a>, this means a significant share of VMs first needs a Windows Server version upgrade, not just a hypervisor migration. We model this as standard in pre-migration assessments and in upgrade planning.</p>
+        <p>Plan the OS upgrade of legacy guests before or alongside the Hyper-V host upgrade. For customers <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<a href="vmware-to-hyper-v-migration-assessment.html">migrating from VMware to Hyper-V</a>-->migrating from VMware to Hyper-V<!--/LINK:vmware-to-hyper-v-migration-assessment-->, this means a significant share of VMs first needs a Windows Server version upgrade, not just a hypervisor migration. We model this as standard in pre-migration assessments and in upgrade planning.</p>
 
         <p><strong>What does work:</strong></p>
         <p>Windows Server 2019, 2022, and 2025 guest VMs run on Windows Server 2025 Hyper-V without issues. Modern Linux distributions with kernel 4.x or newer work as well. The pain sits specifically with 2012 R2 and (to a lesser degree) 2016 guests.</p>
@@ -346,7 +346,7 @@ Get-VM | Select-Object Name, Generation,
 
         <p><strong>Step 4, cluster rolling upgrade.</strong> Windows Server 2025 supports cluster rolling upgrade from both 2019 and 2022. One node at a time is upgraded, the cluster keeps running, and the Cluster Functional Level is explicitly raised at the end with <code>Update-ClusterFunctionalLevel</code>. Plan one or two nodes per maintenance window, depending on VM evacuation time.</p>
 
-        <p><strong>Step 5, post-upgrade validation.</strong> Full <code>Test-Cluster</code> run, validation of Live Migration paths, check that GPU-P (if in use) works correctly, and re-verification of <a href="hyper-v-time-drift-kerberos-csv.html">time service configuration</a>. That last one because we regularly see a major-version upgrade subtly affecting w32time configuration.</p>
+        <p><strong>Step 5, post-upgrade validation.</strong> Full <code>Test-Cluster</code> run, validation of Live Migration paths, check that GPU-P (if in use) works correctly, and re-verification of <!--LINK:hyper-v-time-drift-kerberos-csv--><!--draft:<a href="hyper-v-time-drift-kerberos-csv.html">time service configuration</a>-->time service configuration<!--/LINK:hyper-v-time-drift-kerberos-csv-->. That last one because we regularly see a major-version upgrade subtly affecting w32time configuration.</p>
 
         <p><strong>Step 6, activate new features.</strong> Only when the cluster is stable on the new version, activate Dynamic CPU compatibility features on heterogeneous clusters, plan GPU-P deployment, and connect hosts to Azure Arc for hot-patching. All step by step, not all at once.</p>
 
@@ -405,7 +405,7 @@ Get-VM | Select-Object Name, Generation,
           <li><strong>vTPM 2.0 standaard.</strong> Trusted Platform Module voor VM's wordt standaard meegerold, met implicaties voor backup, replicatie en DR.</li>
           <li><strong>Hot-patching voor Hyper-V hosts.</strong> Bepaalde patches zonder reboot, beperkt scope maar genoeg om patch-windows merkbaar in te korten.</li>
         </ul>
-        <p>Buiten deze vier zijn er verbeteringen aan SDN, AKS on Hyper-V integratie en storage replica, maar die zijn voor de meeste klanten secundair tot <a href="azure-local-migration-readiness.html">Azure Local</a> in beeld komt. Daar leveren we een aparte readiness-assessment voor.</p>
+        <p>Buiten deze vier zijn er verbeteringen aan SDN, AKS on Hyper-V integratie en storage replica, maar die zijn voor de meeste klanten secundair tot <!--LINK:azure-local-migration-readiness--><!--draft:<a href="azure-local-migration-readiness.html">Azure Local</a>-->Azure Local<!--/LINK:azure-local-migration-readiness--> in beeld komt. Daar leveren we een aparte readiness-assessment voor.</p>
 
         <h2 id="nl-2">2. Dynamic CPU compatibility voor Live Migration</h2>
         <p>Dit is de feature waarvan operators in bestaande heterogene clusters het meeste merken.</p>
@@ -504,7 +504,7 @@ Get-VM | Select-Object Name, Generation,
         <p>Voor klanten die 2012 R2-VM's tijdelijk moeten blijven draaien op een 2025 cluster, bestaat er een handmatige registry-truc om de oude device-IDs te aliasen. Didier Van Hoye heeft hierover een uitstekend artikel geschreven dat de offline registry-edit procedure uitlegt. Het is een workaround, geen oplossing.</p>
 
         <p><strong>De juiste oplossing:</strong></p>
-        <p>Plan de OS-upgrade van legacy guests vóór of gelijktijdig met de Hyper-V host-upgrade. Voor klanten die <a href="vmware-to-hyper-v-migration-assessment.html">VMware naar Hyper-V migreren</a>, betekent dit dat een aanzienlijk deel van de VM's eerst een Windows Server-versie upgrade nodig heeft, niet alleen een hypervisor-migratie. Wij modelleren dit standaard in pre-migration assessments en in upgrade-planning.</p>
+        <p>Plan de OS-upgrade van legacy guests vóór of gelijktijdig met de Hyper-V host-upgrade. Voor klanten die <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<a href="vmware-to-hyper-v-migration-assessment.html">VMware naar Hyper-V migreren</a>-->VMware naar Hyper-V migreren<!--/LINK:vmware-to-hyper-v-migration-assessment-->, betekent dit dat een aanzienlijk deel van de VM's eerst een Windows Server-versie upgrade nodig heeft, niet alleen een hypervisor-migratie. Wij modelleren dit standaard in pre-migration assessments en in upgrade-planning.</p>
 
         <p><strong>Wat wel werkt:</strong></p>
         <p>Windows Server 2019, 2022 en 2025 guest-VM's draaien zonder issues op Windows Server 2025 Hyper-V. Moderne Linux-distributies met kernel 4.x of nieuwer werken eveneens. De pijn zit specifiek bij 2012 R2 en (in mindere mate) 2016 guests.</p>
@@ -536,7 +536,7 @@ Get-VM | Select-Object Name, Generation,
 
         <p><strong>Stap 4, cluster rolling upgrade.</strong> Windows Server 2025 ondersteunt cluster rolling upgrade vanuit 2019 en 2022. Een node tegelijk wordt geüpgraded, de cluster blijft draaien, en de Cluster Functional Level wordt aan het eind expliciet verhoogd met <code>Update-ClusterFunctionalLevel</code>. Reken op één tot twee nodes per onderhoudsvenster, afhankelijk van VM-evacuatietijd.</p>
 
-        <p><strong>Stap 5, post-upgrade validatie.</strong> Volledige <code>Test-Cluster</code> run, validatie van Live Migration-paden, controle of GPU-P (indien in gebruik) correct werkt, en hercontrole van <a href="hyper-v-time-drift-kerberos-csv.html">time service-configuratie</a>. Dat laatste, omdat wij regelmatig zien dat een major-version upgrade de w32time-configuratie op subtiele manieren beïnvloedt.</p>
+        <p><strong>Stap 5, post-upgrade validatie.</strong> Volledige <code>Test-Cluster</code> run, validatie van Live Migration-paden, controle of GPU-P (indien in gebruik) correct werkt, en hercontrole van <!--LINK:hyper-v-time-drift-kerberos-csv--><!--draft:<a href="hyper-v-time-drift-kerberos-csv.html">time service-configuratie</a>-->time service-configuratie<!--/LINK:hyper-v-time-drift-kerberos-csv-->. Dat laatste, omdat wij regelmatig zien dat een major-version upgrade de w32time-configuratie op subtiele manieren beïnvloedt.</p>
 
         <p><strong>Stap 6, activeer nieuwe features.</strong> Pas wanneer het cluster stabiel is op de nieuwe versie, activeer je Dynamic CPU compatibility-features op heterogene clusters, plan je GPU-P deployment, en koppel je hosts aan Azure Arc voor hot-patching. Allemaal stap-voor-stap, niet allemaal tegelijk.</p>
 
@@ -568,11 +568,11 @@ Get-VM | Select-Object Name, Generation,
       <div class="related">
         <h3><span lang="en">Related articles</span><span lang="nl">Gerelateerde artikelen</span></h3>
         <ul>
-          <li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li>
-          <li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>
-          <li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>
-          <li><a href="hyper-v-time-drift-kerberos-csv.html"><span lang="en">Time drift in Hyper-V clusters</span><span lang="nl">Time drift in Hyper-V clusters</span></a></li>
-          <li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>
+          <!--LINK:top-10-hyper-v-cluster-issues--><li><a href="top-10-hyper-v-cluster-issues.html"><span lang="en">Hyper-V Cluster Health Check: Top 10 Issues We Find in 2026</span><span lang="nl">Hyper-V Cluster Health Check: 10 issues die we steeds vinden in 2026</span></a></li><!--/LINK:top-10-hyper-v-cluster-issues-->
+          <!--LINK:azure-local-migration-readiness--><!--draft:<li><a href="azure-local-migration-readiness.html"><span lang="en">Azure Local migration readiness checklist</span><span lang="nl">Azure Local migratie readiness checklist</span></a></li>--><!--/LINK:azure-local-migration-readiness-->
+          <!--LINK:vmware-to-hyper-v-migration-assessment--><!--draft:<li><a href="vmware-to-hyper-v-migration-assessment.html"><span lang="en">VMware to Hyper-V cluster migration, pre-migration assessment</span><span lang="nl">VMware naar Hyper-V cluster migratie, pre-migration assessment</span></a></li>--><!--/LINK:vmware-to-hyper-v-migration-assessment-->
+          <!--LINK:hyper-v-time-drift-kerberos-csv--><!--draft:<li><a href="hyper-v-time-drift-kerberos-csv.html"><span lang="en">Time drift in Hyper-V clusters</span><span lang="nl">Time drift in Hyper-V clusters</span></a></li>--><!--/LINK:hyper-v-time-drift-kerberos-csv-->
+          <!--LINK:live-migration-wrong-network--><!--draft:<li><a href="live-migration-wrong-network.html"><span lang="en">Live Migration on the wrong network</span><span lang="nl">Live Migration over het verkeerde netwerk</span></a></li>--><!--/LINK:live-migration-wrong-network-->
         </ul>
       </div>
     </article>
